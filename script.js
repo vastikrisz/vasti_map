@@ -34,7 +34,7 @@ const resetFiltersButton = document.getElementById("resetFiltersButton");
 const priceFilters = document.getElementById("priceFilters");
 const filterPanel = document.getElementById("filterPanel");
 const mobileFilterToggle = document.getElementById("mobileFilterToggle");
-
+const detailsBackdrop = document.getElementById("detailsBackdrop");
 const selectedCategories = new Set();
 const selectedPriceLevels = new Set();
 
@@ -509,6 +509,15 @@ function openPlaceDetails(placeId) {
     detailsPanel.classList.add("open");
     detailsPanel.setAttribute("aria-hidden", "false");
 
+    if (window.innerWidth <= 768) {
+        detailsBackdrop.classList.add("open");
+
+        detailsBackdrop.setAttribute(
+            "aria-hidden",
+            "false"
+        );
+    }
+
     const categoryTags = place.categories
         .map(
             (category) =>
@@ -595,7 +604,19 @@ function openPlaceDetails(placeId) {
 
 function closePlaceDetails() {
     detailsPanel.classList.remove("open");
-    detailsPanel.setAttribute("aria-hidden", "true");
+
+    detailsPanel.setAttribute(
+        "aria-hidden",
+        "true"
+    );
+
+    detailsBackdrop.classList.remove("open");
+
+    detailsBackdrop.setAttribute(
+        "aria-hidden",
+        "true"
+    );
+
     detailsPanel.dataset.placeId = "";
 }
 
@@ -642,6 +663,32 @@ window.addEventListener(
     () => {
         if (window.innerWidth > 768) {
             closeMobileFilters();
+
+            detailsBackdrop.classList.remove(
+                "open"
+            );
+
+            detailsBackdrop.setAttribute(
+                "aria-hidden",
+                "true"
+            );
+        }
+    }
+);
+
+detailsBackdrop.addEventListener(
+    "click",
+    closePlaceDetails
+);
+
+document.addEventListener(
+    "keydown",
+    (event) => {
+        if (
+            event.key === "Escape" &&
+            detailsPanel.classList.contains("open")
+        ) {
+            closePlaceDetails();
         }
     }
 );

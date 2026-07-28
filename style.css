@@ -460,6 +460,26 @@ a {
     display: none;
 }
 
+.details-backdrop {
+    position: fixed;
+    z-index: 650;
+    inset: 0;
+
+    visibility: hidden;
+    background: rgba(20, 28, 36, 0);
+    pointer-events: none;
+
+    transition:
+        background 0.25s ease,
+        visibility 0.25s ease;
+}
+
+.details-backdrop.open {
+    visibility: visible;
+    background: rgba(20, 28, 36, 0.35);
+    pointer-events: auto;
+}
+
 @media (max-width: 768px) {
     .topbar {
         top: 10px;
@@ -525,5 +545,73 @@ a {
 
     .category-button {
         padding: 9px 11px;
+    }
+
+    .details-panel {
+        position: fixed;
+
+        top: auto;
+        right: 0;
+        bottom: 0;
+        left: 0;
+
+        width: 100%;
+        height: auto;
+        max-height: 78dvh;
+
+        padding: 18px 18px 28px;
+        border-radius: 22px 22px 0 0;
+
+        box-shadow:
+            0 -12px 40px rgba(20, 28, 36, 0.25);
+
+        transform: translateY(105%);
+        transition: transform 0.28s ease;
+
+        overscroll-behavior: contain;
+    }
+
+    .details-panel.open {
+        transform: translateY(0);
+    }
+
+    .details-backdrop.open {
+        display: block;
+    }
+
+    .details-panel::before {
+        content: "";
+
+        display: block;
+        width: 46px;
+        height: 5px;
+        margin: -5px auto 10px;
+
+        border-radius: 999px;
+        background: #cbd3db;
+    }
+
+    .details-panel .close-button {
+        position: sticky;
+        top: 0;
+
+        width: 44px;
+        height: 44px;
+        margin-top: -4px;
+
+        background: #edf1f5;
+    }
+
+    .details-panel h2 {
+        margin-top: 18px;
+        font-size: 24px;
+    }
+
+    .place-image {
+        height: 210px;
+    }
+
+    .info-block {
+        padding: 14px 0;
     }
 }
