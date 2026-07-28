@@ -55,6 +55,7 @@ async function loadPlaces() {
             id,
             name,
             address,
+            city,
             latitude,
             longitude,
             website,
@@ -88,6 +89,7 @@ async function loadPlaces() {
 
         name: place.name,
         address: place.address,
+        city: place.city || "",
 
         latitude: Number(place.latitude),
         longitude: Number(place.longitude),
@@ -371,6 +373,7 @@ function renderPlaceSearchResults() {
             const searchableText = [
                 place.name,
                 place.address,
+                place.city,
                 ...place.categories
             ]
                 .join(" ")

@@ -80,6 +80,9 @@ const cancelEditButton =
 const placeNameInput =
     document.getElementById("placeName");
 
+const cityInput =
+    document.getElementById("city");
+
 const websiteInput =
     document.getElementById("website");
 
@@ -141,6 +144,7 @@ async function loadAdminPlaces() {
                 id,
                 name,
                 address,
+                city,
                 latitude,
                 longitude,
                 website,
@@ -194,6 +198,7 @@ function renderAdminPlaces() {
             const searchableText = [
                 place.name,
                 place.address,
+                place.city,
                 ...(Array.isArray(place.categories)
                     ? place.categories
                     : [])
@@ -316,6 +321,9 @@ function startEditingPlace(placeId) {
 
     placeAddress.value =
         place.address || "";
+
+    cityInput.value =
+        place.city || "";
 
     latitudeInput.value =
         place.latitude ?? "";
@@ -539,6 +547,19 @@ async function findLocationByAddress() {
         }
 
         const result = results[0];
+        const addressDetails =
+            result.address || {};
+
+        const detectedCity =
+            addressDetails.city ||
+            addressDetails.town ||
+            addressDetails.village ||
+            addressDetails.municipality ||
+        "";
+
+        if (detectedCity) {
+            cityInput.value = detectedCity;
+        }
 
         latitudeInput.value =
             Number(result.lat).toFixed(7);
@@ -602,6 +623,11 @@ async function savePlace(event) {
     const address =
         String(formData.get("address") || "").trim();
 
+    const city =
+        String(
+            formData.get("city") || ""
+    ).trim();
+
     const latitude =
         Number(formData.get("latitude"));
 
@@ -647,9 +673,9 @@ async function savePlace(event) {
             array.indexOf(category) === index
     );
 
-    if (!name || !address) {
+    if (!name || !address || !city) {
         showSaveMessage(
-            "A nevet és a címet kötelező megadni.",
+            "A nevet, a címet és a települést kötelező megadni.",
             "error"
         );
 
@@ -778,6 +804,7 @@ try {
     const placeToSave = {
         name,
         address,
+        city,
         latitude,
         longitude,
 
