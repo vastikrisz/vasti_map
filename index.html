@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Vasti térképe</title>
+
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+    >
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main class="app">
+        <section class="map-section">
+            <header class="topbar">
+                <div>
+                    <h1>Vasti "hova a picsába menjünk?" térképe</h1>
+                    <p>Saját gyűjtemény interaktív térképen, használd a kategóriákat szűrésre. Ha van javaslatod szólj!</p>
+                </div>
+
+                <button id="resetFiltersButton" class="secondary-button" type="button">
+                    Szűrők törlése
+                </button>
+            </header>
+
+            <div class="filter-panel">
+                <div class="map-search">
+                    <label for="placeSearchInput">
+                        Hely keresése
+                    </label>
+
+                    <input
+                        id="placeSearchInput"
+                        type="search"
+                        placeholder="Név, cím vagy kategória..."
+                        autocomplete="off"
+                    >
+
+                    <div
+                        id="placeSearchResults"
+                        class="map-search-results hidden"
+                    ></div>
+                </div>
+                <strong>Kategóriák</strong>
+                <div id="categoryFilters" class="category-filters"></div>
+                <div class="price-filter-section">
+                    <strong>Árkategória</strong>
+
+                    <div id="priceFilters" class="category-filters">
+                        <button
+                            class="category-button price-filter-button"
+                            type="button"
+                            data-price-level="cheap"
+                        >
+                            Olcsó
+                        </button>
+
+                        <button
+                            class="category-button price-filter-button"
+                            type="button"
+                            data-price-level="expensive"
+                        >
+                            Drága
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="map" aria-label="Interaktív térkép"></div>
+        </section>
+
+        <aside id="detailsPanel" class="details-panel" aria-hidden="true">
+            <button
+                id="closeDetailsButton"
+                class="close-button"
+                type="button"
+                aria-label="Adatlap bezárása"
+            >
+                ×
+            </button>
+
+            <div id="detailsContent"></div>
+        </aside>
+    </main>
+
+    <script
+        src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"
+    ></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"
+    ></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+    ></script>
+
+    <script src="config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

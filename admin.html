@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Térkép adminisztráció</title>
+
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"
+    >
+    <link rel="stylesheet" href="admin.css">
+</head>
+
+<body>
+    <main class="admin-page">
+
+        <section
+            id="loginSection"
+            class="admin-card"
+        >
+            <h1>Adminisztrátori belépés</h1>
+
+            <p class="subtitle">
+                Jelentkezz be a térkép szerkesztéséhez.
+            </p>
+
+            <form id="loginForm">
+                <label for="email">
+                    E-mail-cím
+                </label>
+
+                <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autocomplete="email"
+                    required
+                >
+
+                <label for="password">
+                    Jelszó
+                </label>
+
+                <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autocomplete="current-password"
+                    required
+                >
+
+                <button
+                    id="loginButton"
+                    type="submit"
+                >
+                    Belépés
+                </button>
+            </form>
+
+            <p
+                id="loginMessage"
+                class="message"
+                aria-live="polite"
+            ></p>
+
+            <a
+                class="back-link"
+                href="index.html"
+            >
+                Vissza a térképhez
+            </a>
+        </section>
+
+        <section
+    id="dashboardSection"
+    class="admin-card dashboard-card hidden"
+>
+    <div class="dashboard-header">
+        <div>
+            <h1>Adminfelület</h1>
+
+            <p class="subtitle">
+                Új nevezetesség hozzáadása a térképhez.
+            </p>
+        </div>
+
+        <button
+            id="logoutButton"
+            class="secondary-button"
+            type="button"
+        >
+            Kijelentkezés
+        </button>
+    </div>
+
+    <p id="userEmail" class="user-email"></p>
+
+    <form id="placeForm" class="place-form">
+
+        <div
+            id="editModeBanner"
+            class="edit-mode-banner full-width hidden"
+>
+    <strong>Szerkesztési mód</strong>
+
+    <span id="editModePlaceName"></span>
+        </div>
+
+        <div class="form-group full-width">
+            <label for="placeName">
+                Nevezetesség neve *
+            </label>
+
+            <input
+                id="placeName"
+                name="name"
+                type="text"
+                required
+            >
+        </div>
+
+        <div class="form-group full-width">
+            <label for="placeAddress">
+                Cím vagy helyszín *
+            </label>
+
+            <div class="address-row">
+                <input
+                    id="placeAddress"
+                    name="address"
+                    type="text"
+                    placeholder="Például: 3300 Eger, Vár 1."
+                    required
+                >
+
+                <button
+                    id="findLocationButton"
+                    class="secondary-button"
+                    type="button"
+                >
+                    Hely megkeresése
+                </button>
+            </div>
+
+            <p
+                id="locationMessage"
+                class="field-message"
+            ></p>
+        </div>
+
+        <div class="form-group">
+            <label for="latitude">
+                Szélességi koordináta *
+            </label>
+
+            <input
+                id="latitude"
+                name="latitude"
+                type="number"
+                step="any"
+                min="-90"
+                max="90"
+                required
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="longitude">
+                Hosszúsági koordináta *
+            </label>
+
+            <input
+                id="longitude"
+                name="longitude"
+                type="number"
+                step="any"
+                min="-180"
+                max="180"
+                required
+            >
+        </div>
+
+        <div class="form-group full-width">
+            <label>
+                Pozíció ellenőrzése a térképen
+            </label>
+
+            <p class="field-hint">
+                Kattints a térképre, vagy húzd a jelölőt a pontos helyre.
+            </p>
+
+            <div
+                id="adminMap"
+                class="admin-map"
+                aria-label="A nevezetesség helyének ellenőrzése"
+            ></div>
+        </div>
+
+        <div class="form-group full-width">
+            <label for="website">
+                Weboldal
+            </label>
+
+            <input
+                id="website"
+                name="website"
+                type="url"
+                placeholder="https://..."
+            >
+        </div>
+
+        <div class="form-group full-width">
+            <label for="description">
+                Leírás
+            </label>
+
+            <textarea
+                id="description"
+                name="description"
+                rows="5"
+            ></textarea>
+        </div>
+
+        <div class="form-group full-width">
+            <label for="ticketInfo">
+                Jegyárak és jegyinformáció
+            </label>
+
+            <textarea
+                id="ticketInfo"
+                name="ticketInfo"
+                rows="3"
+            ></textarea>
+        </div>
+
+        <div class="form-group full-width">
+            <label for="openingHours">
+                Nyitvatartás
+            </label>
+
+            <textarea
+                id="openingHours"
+                name="openingHours"
+                rows="3"
+            ></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="categoryOne">
+                Első kategória *
+            </label>
+
+            <select
+                id="categoryOne"
+                name="categoryOne"
+                required
+            >
+            <option value="">
+                Válassz kategóriát
+            </option>
+
+            <option value="Állatkert">
+                Állatkert
+            </option>
+
+            <option value="Múzeum">
+                Múzeum
+            </option>
+
+            <option value="Vár / kastély">
+                Vár / kastély
+            </option>
+
+            <option value="Séta / pihenőhely">
+                Séta / pihenőhely
+            </option>
+
+            <option value="Túra / kirándulóhely">
+                Túra / kirándulóhely
+            </option>
+
+            <option value="Kajálda">
+                Kajálda
+            </option>
+
+            <option value="Helyi érdekesség">
+                Helyi érdekesség
+            </option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="categoryTwo">
+                Második kategória
+            </label>
+
+            <select
+                id="categoryTwo"
+                name="categoryTwo"
+            >
+                <option value="">
+                    Nincs második kategória
+                </option>
+
+                <option value="Állatkert">
+                    Állatkert
+                </option>
+
+                <option value="Múzeum">
+                    Múzeum
+                </option>
+
+                <option value="Vár / kastély">
+                    Vár / kastély
+                </option>
+
+                <option value="Séta / pihenőhely">
+                    Séta / pihenőhely
+                </option>
+
+                <option value="Túra / kirándulóhely">
+                    Túra / kirándulóhely
+                </option>
+
+                <option value="Kajálda">
+                    Kajálda
+                </option>
+
+                <option value="Helyi érdekesség">
+                    Helyi érdekesség
+                </option>
+            </select>
+        </div>
+
+        <fieldset class="price-fieldset full-width">
+            <legend>Árkategória</legend>
+
+            <div class="price-options">
+                <label class="price-option">
+                    <input
+                        type="radio"
+                        name="priceLevel"
+                        value=""
+                        checked
+                    >
+
+                    <span>Nincs megadva</span>
+                </label>
+
+                <label class="price-option">
+                    <input
+                        type="radio"
+                        name="priceLevel"
+                        value="cheap"
+                    >
+
+                    <span>Olcsó</span>
+                </label>
+
+                <label class="price-option">
+                    <input
+                        type="radio"
+                        name="priceLevel"
+                        value="expensive"
+                    >
+
+                    <span>Drága</span>
+                </label>
+            </div>
+        </fieldset>
+
+        <div class="form-group full-width image-form-section">
+            <h3>Kép hozzáadása</h3>
+
+            <p class="field-hint">
+                Tölts fel egy képet a gépedről, vagy adj meg egy külső képlinket.
+                Ha mindkettőt megadod, a feltöltött kép lesz használva.
+            </p>
+
+            <div class="image-input-grid">
+                <div class="image-input-card">
+                    <label for="imageFile">
+                        Kép feltöltése a gépről
+                    </label>
+
+                    <input
+                    id="imageFile"
+                    name="imageFile"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    >
+
+                    <p class="field-hint">
+                        JPG, PNG vagy WebP formátum.
+                    </p>
+                </div>
+
+                <div class="image-input-card">
+                    <label for="imageUrl">
+                        Külső képlink
+                    </label>
+
+                    <input
+                        id="imageUrl"
+                        name="imageUrl"
+                        type="url"
+                        placeholder="https://pelda.hu/kep.jpg"
+                    >
+
+                    <p class="field-hint">
+                        Közvetlenül egy képfájlra mutató cím.
+                    </p>
+                </div>
+            </div>
+
+            <div
+                id="imagePreviewContainer"
+                class="image-preview-container hidden"
+            >
+                <strong>Kép előnézete</strong>
+
+                <img
+                    id="imagePreview"
+                    class="image-preview"
+                    src=""
+                    alt="A kiválasztott kép előnézete"
+                >
+
+                <button
+                    id="removeSelectedImageButton"
+                    class="secondary-button"
+                    type="button"
+                >
+                    Kép eltávolítása
+                </button>
+            </div>
+
+            <p
+                id="imageMessage"
+                class="field-message"
+                aria-live="polite"
+            ></p>
+        </div>
+
+        <label class="checkbox-row full-width">
+            <input
+                id="isPublished"
+                name="isPublished"
+                type="checkbox"
+                checked
+            >
+
+            <span>
+                Azonnal jelenjen meg a nyilvános térképen
+            </span>
+        </label>
+
+        <div class="form-actions full-width">
+            <button
+                id="savePlaceButton"
+                type="submit"
+            >
+                Nevezetesség mentése
+            </button>
+
+            <button
+                id="cancelEditButton"
+                class="secondary-button hidden"
+                type="button"
+            >
+                Szerkesztés megszakítása
+            </button>
+
+            <button
+                id="clearFormButton"
+                class="secondary-button"
+                type="button"
+            >
+                Űrlap törlése
+            </button>
+        </div>
+
+        <p
+            id="saveMessage"
+            class="message full-width"
+            aria-live="polite"
+        ></p>
+    </form>
+
+    <section class="places-manager">
+    <div class="places-manager-header">
+        <div>
+            <h2>Mentett nevezetességek</h2>
+
+            <p id="placesCount" class="places-count">
+                Helyek betöltése...
+            </p>
+        </div>
+
+        <button
+            id="refreshPlacesButton"
+            class="secondary-button"
+            type="button"
+        >
+            Lista frissítése
+        </button>
+    </div>
+
+    <div class="places-search">
+        <label for="placesSearchInput">
+            Keresés a mentett helyek között
+        </label>
+
+        <input
+            id="placesSearchInput"
+            type="search"
+            placeholder="Név, cím vagy kategória..."
+            autocomplete="off"
+        >
+    </div>
+
+    <p
+        id="placesListMessage"
+        class="message"
+        aria-live="polite"
+    ></p>
+
+    <div id="placesList" class="places-list"></div>
+    </section>
+
+    <a class="back-link" href="index.html">
+        Térkép megnyitása
+    </a>
+    </section>
+        
+
+    </main>
+
+    <script
+        src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"
+    ></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+    ></script>
+
+    <script src="config.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>
