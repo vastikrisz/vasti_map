@@ -219,6 +219,80 @@ function getVisiblePlaces() {
     });
 }
 
+const CATEGORY_MARKER_CONFIG = {
+    "Állatkert": {
+        symbol: "🐾",
+        color: "#2e7d32"
+    },
+
+    "Múzeum": {
+        symbol: "🏛",
+        color: "#7b1fa2"
+    },
+
+    "Vár / kastély": {
+        symbol: "🏰",
+        color: "#6d4c41"
+    },
+
+    "Séta / pihenőhely": {
+        symbol: "🌳",
+        color: "#00897b"
+    },
+
+    "Túra / kirándulóhely": {
+        symbol: "▲",
+        color: "#455a64"
+    },
+
+    "Kajálda": {
+        symbol: "🍴",
+        color: "#e65100"
+    },
+
+    "Helyi érdekesség": {
+        symbol: "★",
+        color: "#c2185b"
+    }
+};
+
+
+const DEFAULT_MARKER_CONFIG = {
+    symbol: "●",
+    color: "#546e7a"
+};
+
+
+function getCategoryMarkerIcon(place) {
+    const primaryCategory =
+        Array.isArray(place.categories)
+            ? place.categories[0]
+            : "";
+
+    const markerConfig =
+        CATEGORY_MARKER_CONFIG[primaryCategory] ||
+        DEFAULT_MARKER_CONFIG;
+
+    return L.divIcon({
+        className: "category-marker-wrapper",
+
+        html: `
+            <div
+                class="category-marker-pin"
+                style="--marker-color: ${markerConfig.color}"
+            >
+                <span class="category-marker-symbol">
+                    ${markerConfig.symbol}
+                </span>
+            </div>
+        `,
+
+        iconSize: [42, 48],
+        iconAnchor: [21, 46],
+        popupAnchor: [0, -43]
+    });
+}
+
 function renderMarkers() {
     markerLayer.clearLayers();
     markerByPlaceId.clear();
@@ -226,10 +300,25 @@ function renderMarkers() {
     const visiblePlaces = getVisiblePlaces();
 
     visiblePlaces.forEach((place) => {
-        const marker = L.marker([
-            place.latitude,
-            place.longitude
-        ]);
+        const marker = L.marker(
+    [
+        place.latitude,
+        place.longitude
+    ],
+    {
+        icon:
+            getCategoryMarkerIcon(place),
+
+        title:
+            place.name,
+
+        alt:
+            place.name,
+
+        riseOnHover:
+            true
+    }
+);
 
         marker.bindPopup(`
             <strong class="popup-title">${escapeHtml(place.name)}</strong>
