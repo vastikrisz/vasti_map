@@ -32,6 +32,8 @@ const placeSearchResults = document.getElementById("placeSearchResults");
 const categoryFilters = document.getElementById("categoryFilters");
 const resetFiltersButton = document.getElementById("resetFiltersButton");
 const priceFilters = document.getElementById("priceFilters");
+const filterPanel = document.getElementById("filterPanel");
+const mobileFilterToggle = document.getElementById("mobileFilterToggle");
 
 const selectedCategories = new Set();
 const selectedPriceLevels = new Set();
@@ -416,6 +418,40 @@ function renderPlaceSearchResults() {
             .join("");
 }
 
+function setMobileFiltersOpen(isOpen) {
+    filterPanel.classList.toggle(
+        "mobile-open",
+        isOpen
+    );
+
+    mobileFilterToggle.setAttribute(
+        "aria-expanded",
+        String(isOpen)
+    );
+
+    mobileFilterToggle.textContent =
+        isOpen
+            ? "Bezárás"
+            : "Szűrők";
+}
+
+
+function toggleMobileFilters() {
+    const isCurrentlyOpen =
+        filterPanel.classList.contains(
+            "mobile-open"
+        );
+
+    setMobileFiltersOpen(
+        !isCurrentlyOpen
+    );
+}
+
+
+function closeMobileFilters() {
+    setMobileFiltersOpen(false);
+}
+
 function selectPlaceFromSearch(placeId) {
     const place = places.find(
         (item) =>
@@ -596,6 +632,20 @@ placeSearchResults.addEventListener(
     }
 );
 
+mobileFilterToggle.addEventListener(
+    "click",
+    toggleMobileFilters
+);
+
+window.addEventListener(
+    "resize",
+    () => {
+        if (window.innerWidth > 768) {
+            closeMobileFilters();
+        }
+    }
+);
+
 document.addEventListener(
     "click",
     (event) => {
@@ -613,6 +663,34 @@ document.addEventListener(
 map.on("click", () => {
     map.closePopup();
 });
+
+map.getContainer().addEventListener(
+        "pointerdown",
+        (event) => {
+            if (window.innerWidth > 768) {
+                return;
+            }
+
+            if (!(event.target instanceof Element)) {
+                return;
+            }
+
+            const clickedInteractiveElement =
+                event.target.closest(`
+                    .leaflet-marker-icon,
+                    .marker-cluster,
+                    .leaflet-control,
+                    .leaflet-popup
+                `);
+
+            if (!clickedInteractiveElement) {
+                closeMobileFilters();
+            }
+        },
+        {
+            passive: true
+        }
+    );
 
 window.openPlaceDetails = openPlaceDetails;
 

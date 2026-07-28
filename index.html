@@ -32,12 +32,28 @@
                     <p>Saját gyűjtemény interaktív térképen, használd a kategóriákat szűrésre. Ha van javaslatod szólj!</p>
                 </div>
 
-                <button id="resetFiltersButton" class="secondary-button" type="button">
-                    Szűrők törlése
-                </button>
+                <div class="topbar-actions">
+                    <button
+                        id="mobileFilterToggle"
+                        class="secondary-button mobile-filter-toggle"
+                        type="button"
+                        aria-controls="filterPanel"
+                        aria-expanded="false"
+                    >
+                        Szűrők
+                    </button>
+
+                    <button
+                        id="resetFiltersButton"
+                        class="secondary-button"
+                        type="button"
+                    >
+                        Szűrők törlése
+                    </button>
+                </div>
             </header>
 
-            <div class="filter-panel">
+            <div id="filterPanel" class="filter-panel">
                 <div class="map-search">
                     <label for="placeSearchInput">
                         Hely keresése
