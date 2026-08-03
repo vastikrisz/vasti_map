@@ -384,7 +384,7 @@ function startEditingPlace(placeId) {
             "Jelenlegi, tárhelyre feltöltött kép.";
 
         imageMessage.style.color =
-            "#657383";
+            "#94a3b8";
     } else {
         // Külső kép URL.
         imageUrlInput.value =
@@ -421,12 +421,14 @@ function startEditingPlace(placeId) {
 
     showSaveMessage("");
 
-    placeForm.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
+    placeForm.scrollTo({
+        top: 0,
+        behavior: "smooth"
     });
 
-    placeNameInput.focus();
+    placeNameInput.focus({
+        preventScroll: true
+    });
 }
 
 async function deletePlace(placeId, placeName) {
@@ -504,7 +506,7 @@ async function findLocationByAddress() {
         locationMessage.textContent =
             "Először írd be a címet vagy a hely nevét.";
 
-        locationMessage.style.color = "#b42318";
+        locationMessage.style.color = "#f87171";
         placeAddress.focus();
         return;
     }
@@ -515,7 +517,7 @@ async function findLocationByAddress() {
     locationMessage.textContent =
         "Hely keresése folyamatban...";
 
-    locationMessage.style.color = "#657383";
+    locationMessage.style.color = "#94a3b8";
 
     try {
         const searchParameters = new URLSearchParams({
@@ -542,7 +544,7 @@ async function findLocationByAddress() {
             locationMessage.textContent =
                 "Nem találtam ilyen helyet. Próbáld meg pontosabb címmel vagy a nevezetesség nevével.";
 
-            locationMessage.style.color = "#b42318";
+            locationMessage.style.color = "#f87171";
             return;
         }
 
@@ -576,14 +578,14 @@ async function findLocationByAddress() {
         locationMessage.textContent =
             `Találat: ${result.display_name} – OpenStreetMap`;
 
-        locationMessage.style.color = "#18794e";
+        locationMessage.style.color = "#4ade80";
     } catch (error) {
         console.error("Helykeresési hiba:", error);
 
         locationMessage.textContent =
             "Nem sikerült lekérni a hely koordinátáit. Próbáld újra később.";
 
-        locationMessage.style.color = "#b42318";
+        locationMessage.style.color = "#f87171";
     } finally {
         findLocationButton.disabled = false;
         findLocationButton.textContent = "Hely megkeresése";
@@ -739,7 +741,7 @@ try {
             "A kép tömörítése és feltöltése folyamatban...";
 
         imageMessage.style.color =
-            "#657383";
+            "#94a3b8";
 
         const uploadResult =
             await uploadPlaceImage(
@@ -764,7 +766,7 @@ try {
             `A tömörített kép feltöltve: ${sizeInKilobytes} KB`;
 
         imageMessage.style.color =
-            "#18794e";
+            "#4ade80";
     } else if (imageUrl) {
         finalImageUrl = imageUrl;
         finalStoragePath = null;
@@ -988,7 +990,7 @@ function initializeAdminMap() {
             "A pozíciót a térképen állítottad be.";
 
         locationMessage.style.color =
-            "#18794e";
+            "#4ade80";
     });
 
     setTimeout(() => {
@@ -1039,7 +1041,7 @@ function updateAdminMapPosition(
                     "A jelölő pozíciója módosítva.";
 
                 locationMessage.style.color =
-                    "#18794e";
+                    "#4ade80";
             }
         );
     } else {
@@ -1582,7 +1584,7 @@ imageFileInput.addEventListener(
             imageMessage.textContent =
                 "A kiválasztott fájl nem kép.";
 
-            imageMessage.style.color = "#b42318";
+            imageMessage.style.color = "#f87171";
 
             imageFileInput.value = "";
             return;
@@ -1598,7 +1600,7 @@ imageFileInput.addEventListener(
         imageMessage.textContent =
             `Kiválasztva: ${file.name}`;
 
-        imageMessage.style.color = "#18794e";
+        imageMessage.style.color = "#4ade80";
     }
 );
 
