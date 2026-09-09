@@ -32,6 +32,7 @@ const placeSearchResults = document.getElementById("placeSearchResults");
 const categoryFilters = document.getElementById("categoryFilters");
 const resetFiltersButton = document.getElementById("resetFiltersButton");
 const priceFilters = document.getElementById("priceFilters");
+const priceFilterSection = document.querySelector(".price-filter-section");
 const filterPanel = document.getElementById("filterPanel");
 const mobileFilterToggle = document.getElementById("mobileFilterToggle");
 const detailsBackdrop = document.getElementById("detailsBackdrop");
@@ -159,6 +160,7 @@ function renderCategoryFilters() {
                 button.classList.add("active");
             }
 
+            updatePriceFilterVisibility();
             renderMarkers();
         });
 
@@ -204,6 +206,31 @@ function initializePriceFilters() {
         });
 }
 
+function isFoodPlace(place) {
+    return Array.isArray(place.categories) &&
+        place.categories.includes("Kajálda");
+}
+
+function updatePriceFilterVisibility() {
+    const foodCategorySelected =
+        selectedCategories.has("Kajálda");
+
+    priceFilterSection.style.display =
+        foodCategorySelected
+            ? ""
+            : "none";
+
+    if (!foodCategorySelected) {
+        selectedPriceLevels.clear();
+
+        priceFilters
+            .querySelectorAll("[data-price-level]")
+            .forEach((button) => {
+                button.classList.remove("active");
+            });
+    }
+}
+
 function getVisiblePlaces() {
     return places.filter((place) => {
         const categoryMatches =
@@ -213,13 +240,24 @@ function getVisiblePlaces() {
                     selectedCategories.has(category)
             );
 
+        if (!categoryMatches) {
+            return false;
+        }
+
+        const foodPlace =
+            isFoodPlace(place);
+
+        if (!foodPlace) {
+            return true;
+        }
+
         const priceMatches =
             selectedPriceLevels.size === 0 ||
             selectedPriceLevels.has(
                 place.priceLevel
             );
 
-        return categoryMatches && priceMatches;
+        return priceMatches;
     });
 }
 
@@ -499,6 +537,8 @@ function clearActiveFilters() {
         .forEach((button) => {
             button.classList.remove("active");
         });
+
+    updatePriceFilterVisibility();
 }
 
 function openPlaceDetails(placeId) {
@@ -528,23 +568,29 @@ function openPlaceDetails(placeId) {
         )
         .join("");
 
-    let priceHtml = "";
+        let priceHtml = "";
 
-    if (place.priceLevel === "cheap") {
-        priceHtml = `
-            <span class="price-badge cheap">
-                Olcsó
-            </span>
-        `;
-    }
+        if (
+            isFoodPlace(place) &&
+            place.priceLevel === "cheap"
+        ) {
+            priceHtml = `
+                <span class="price-badge cheap">
+                    Olcsó
+                </span>
+            `;
+        }
 
-    if (place.priceLevel === "expensive") {
-        priceHtml = `
-            <span class="price-badge expensive">
-                Drága
-            </span>
-        `;
-    }
+        if (
+            isFoodPlace(place) &&
+                place.priceLevel === "expensive"
+        ) {
+            priceHtml = `
+                <span class="price-badge expensive">
+                    Drága
+                </span>
+            `;
+        }
 
     detailsContent.innerHTML = `
         <img
@@ -745,4 +791,5 @@ map.getContainer().addEventListener(
 window.openPlaceDetails = openPlaceDetails;
 
 initializePriceFilters();
+updatePriceFilterVisibility();
 loadPlaces();

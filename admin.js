@@ -913,6 +913,17 @@ try {
         "success"
     );
 
+    placeForm.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
+
+    setTimeout(() => {
+        placeNameInput.focus({
+            preventScroll: true
+        });
+    }, 300);
+
     await loadAdminPlaces();
 }
 
