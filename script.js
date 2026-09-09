@@ -36,6 +36,8 @@ const priceFilterSection = document.querySelector(".price-filter-section");
 const filterPanel = document.getElementById("filterPanel");
 const mobileFilterToggle = document.getElementById("mobileFilterToggle");
 const detailsBackdrop = document.getElementById("detailsBackdrop");
+const mobileSearchButton = document.getElementById("mobileSearchButton");
+const mobileFilterButton = document.getElementById("mobileFilterButton");
 const selectedCategories = new Set();
 const selectedPriceLevels = new Set();
 
@@ -593,56 +595,72 @@ function openPlaceDetails(placeId) {
         }
 
     detailsContent.innerHTML = `
-        <img
-            class="place-image"
-            src="${escapeHtml(place.image)}"
-            alt="${escapeHtml(place.name)}"
-        >
+        <div class="details-summary">
+            <img
+                class="place-image"
+                src="${escapeHtml(place.image)}"
+                alt="${escapeHtml(place.name)}"
+            >
 
-        <h2>${escapeHtml(place.name)}</h2>
-        <p class="address">${escapeHtml(place.address)}</p>
+            <div class="details-summary-text">
+                <h2>${escapeHtml(place.name)}</h2>
 
-        <div class="category-list">
-            ${categoryTags}
+                <div class="category-list">
+                    ${categoryTags}
+                </div>
+
+                <div class="place-distance-placeholder">
+                    📍 Távolság később
+                </div>
+            </div>
         </div>
 
-        ${
-            priceHtml
-                ? `
-                    <section class="info-block">
-                    <h3>Árkategória</h3>
-                    ${priceHtml}
-                    </section>
-                `
-                : ""
-        }
+        <div class="details-full-content">
 
-        <section class="info-block">
-            <h3>Leírás</h3>
-            <p>${escapeHtml(place.description)}</p>
-        </section>
+            <section class="info-block">
+                <h3>Cím</h3>
+                <p>${escapeHtml(place.address)}</p>
+            </section>
 
-        <section class="info-block">
-            <h3>Jegyinformáció</h3>
-            <p>${escapeHtml(place.ticketInfo)}</p>
-        </section>
+            ${
+                priceHtml
+                    ? `
+                        <section class="info-block">
+                            <h3>Árkategória</h3>
+                            ${priceHtml}
+                        </section>
+                    `
+                    : ""
+            }
 
-        <section class="info-block">
-            <h3>Nyitvatartás</h3>
-            <p>${escapeHtml(place.openingHours)}</p>
-        </section>
+            <section class="info-block">
+                <h3>Leírás</h3>
+                <p>${escapeHtml(place.description)}</p>
+            </section>
 
-        <section class="info-block">
-            <h3>Weboldal</h3>
-            <a
-                class="website-link"
-                href="${escapeHtml(place.website)}"
-                target="_blank"
-                rel="noopener noreferrer"
-            >
-                Hivatalos weboldal megnyitása
-            </a>
-        </section>
+            <section class="info-block">
+                <h3>Jegyinformáció</h3>
+                <p>${escapeHtml(place.ticketInfo)}</p>
+            </section>
+
+            <section class="info-block">
+                <h3>Nyitvatartás</h3>
+                <p>${escapeHtml(place.openingHours)}</p>
+            </section>
+
+            <section class="info-block">
+                <h3>Weboldal</h3>
+                <a
+                    class="website-link"
+                    href="${escapeHtml(place.website)}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    Hivatalos weboldal megnyitása
+                </a>
+            </section>
+
+        </div>
     `;
 
     map.panTo([place.latitude, place.longitude], {
@@ -653,6 +671,7 @@ function openPlaceDetails(placeId) {
 
 function closePlaceDetails() {
     detailsPanel.classList.remove("open");
+    detailsPanel.classList.remove("expanded");
 
     detailsPanel.setAttribute(
         "aria-hidden",
@@ -667,6 +686,28 @@ function closePlaceDetails() {
     );
 
     detailsPanel.dataset.placeId = "";
+}
+
+function expandPlaceDetails() {
+    detailsPanel.classList.add("expanded");
+
+    detailsBackdrop.classList.add("open");
+
+    detailsBackdrop.setAttribute(
+        "aria-hidden",
+        "false"
+    );
+}
+
+function collapsePlaceDetails() {
+    detailsPanel.classList.remove("expanded");
+
+    detailsBackdrop.classList.remove("open");
+
+    detailsBackdrop.setAttribute(
+        "aria-hidden",
+        "true"
+    );
 }
 
 function resetFilters() {
@@ -722,6 +763,22 @@ window.addEventListener(
                 "true"
             );
         }
+    }
+);
+
+mobileFilterButton.addEventListener(
+    "click",
+    toggleMobileFilters
+);
+
+mobileSearchButton.addEventListener(
+    "click",
+    () => {
+        setMobileFiltersOpen(true);
+
+        setTimeout(() => {
+            placeSearchInput.focus();
+        }, 100);
     }
 );
 
