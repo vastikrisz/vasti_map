@@ -177,6 +177,13 @@
         ></div>
 
         <aside id="detailsPanel" class="details-panel" aria-hidden="true">
+            <div
+                id="detailsDragZone"
+                class="details-drag-zone"
+                aria-label="Adatlap méretének módosítása"
+                >
+                <span class="details-drag-handle"></span>
+            </div>
             <button
                 id="closeDetailsButton"
                 class="close-button"
@@ -187,7 +194,37 @@
             </button>
 
             <div id="detailsContent"></div>
+            <div
+                id="detailsDragHint"
+                class="details-drag-hint"
+                >
+                <span class="details-drag-hint-arrow">↑</span>
+                <span id="detailsDragHintText">
+                    Húzd fel a részletekhez
+                </span>
+            </div>
         </aside>
+        <div
+            id="imageLightbox"
+            class="image-lightbox"
+            aria-hidden="true"
+        >
+            <button
+                id="imageLightboxClose"
+                class="image-lightbox-close"
+                type="button"
+                aria-label="Kép bezárása"
+            >
+            ×
+            </button>
+
+            <img
+                id="imageLightboxImage"
+                class="image-lightbox-image"
+                src=""
+                alt=""
+            >
+        </div>
     </main>
 
     <script

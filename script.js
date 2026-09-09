@@ -1,5 +1,10 @@
 let places = [];
 let allCategories = [];
+let lightboxSourceImage = null;
+let detailsDragging = false;
+let detailsDragStartY = 0;
+let detailsDragCurrentY = 0;
+let detailsDragStartedExpanded = false;
 
 const map = L.map("map", {
     zoomControl: true,
@@ -38,6 +43,12 @@ const mobileFilterToggle = document.getElementById("mobileFilterToggle");
 const detailsBackdrop = document.getElementById("detailsBackdrop");
 const mobileSearchButton = document.getElementById("mobileSearchButton");
 const mobileFilterButton = document.getElementById("mobileFilterButton");
+const imageLightbox = document.getElementById("imageLightbox");
+const imageLightboxImage = document.getElementById("imageLightboxImage");
+const imageLightboxClose = document.getElementById("imageLightboxClose");
+const detailsDragZone = document.getElementById("detailsDragZone");
+const detailsDragHint = document.getElementById("detailsDragHint");
+const detailsDragHintText = document.getElementById("detailsDragHintText");
 const selectedCategories = new Set();
 const selectedPriceLevels = new Set();
 
@@ -306,6 +317,96 @@ const DEFAULT_MARKER_CONFIG = {
     color: "#546e7a"
 };
 
+function openImageLightbox(sourceImage) {
+    lightboxSourceImage = sourceImage;
+
+    const rect =
+        sourceImage.getBoundingClientRect();
+
+    imageLightboxImage.src =
+        sourceImage.src;
+
+    imageLightboxImage.alt =
+        sourceImage.alt || "";
+
+    imageLightboxImage.style.top =
+        `${rect.top}px`;
+
+    imageLightboxImage.style.left =
+        `${rect.left}px`;
+
+    imageLightboxImage.style.width =
+        `${rect.width}px`;
+
+    imageLightboxImage.style.height =
+        `${rect.height}px`;
+
+    imageLightboxImage.style.borderRadius =
+        "14px";
+
+    imageLightbox.classList.add("open");
+
+    imageLightbox.setAttribute(
+        "aria-hidden",
+        "false"
+    );
+
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            imageLightboxImage.style.top =
+                "6dvh";
+
+            imageLightboxImage.style.left =
+                "4vw";
+
+            imageLightboxImage.style.width =
+                "92vw";
+
+            imageLightboxImage.style.height =
+                "88dvh";
+
+            imageLightboxImage.style.borderRadius =
+                "18px";
+        });
+    });
+}
+
+function closeImageLightbox() {
+    if (!lightboxSourceImage) {
+        return;
+    }
+
+    const rect =
+        lightboxSourceImage.getBoundingClientRect();
+
+    imageLightboxImage.style.top =
+        `${rect.top}px`;
+
+    imageLightboxImage.style.left =
+        `${rect.left}px`;
+
+    imageLightboxImage.style.width =
+        `${rect.width}px`;
+
+    imageLightboxImage.style.height =
+        `${rect.height}px`;
+
+    imageLightboxImage.style.borderRadius =
+        "14px";
+
+    imageLightbox.classList.remove("open");
+
+    setTimeout(() => {
+        imageLightbox.setAttribute(
+            "aria-hidden",
+            "true"
+        );
+
+        imageLightboxImage.src = "";
+
+        lightboxSourceImage = null;
+    }, 320);
+}
 
 function getCategoryMarkerIcon(place) {
     const primaryCategory =
@@ -459,6 +560,22 @@ function renderPlaceSearchResults() {
                 `
             )
             .join("");
+}
+
+function resetDetailsDragPosition() {
+    detailsPanel.style.transform = "";
+    detailsPanel.style.transition = "";
+
+    detailsPanel.classList.remove(
+        "dragging"
+    );
+
+    detailsPanel.classList.remove(
+        "drag-ready"
+    );
+
+    detailsDragHintText.textContent =
+        "Húzd fel a részletekhez";
 }
 
 function setMobileFiltersOpen(isOpen) {
@@ -670,6 +787,7 @@ function openPlaceDetails(placeId) {
 }
 
 function closePlaceDetails() {
+    resetDetailsDragPosition();
     detailsPanel.classList.remove("open");
     detailsPanel.classList.remove("expanded");
 
@@ -689,9 +807,15 @@ function closePlaceDetails() {
 }
 
 function expandPlaceDetails() {
-    detailsPanel.classList.add("expanded");
+    resetDetailsDragPosition();
 
-    detailsBackdrop.classList.add("open");
+    detailsPanel.classList.add(
+        "expanded"
+    );
+
+    detailsBackdrop.classList.add(
+        "open"
+    );
 
     detailsBackdrop.setAttribute(
         "aria-hidden",
@@ -700,14 +824,22 @@ function expandPlaceDetails() {
 }
 
 function collapsePlaceDetails() {
-    detailsPanel.classList.remove("expanded");
+    resetDetailsDragPosition();
 
-    detailsBackdrop.classList.remove("open");
+    detailsPanel.classList.remove(
+        "expanded"
+    );
+
+    detailsBackdrop.classList.remove(
+        "open"
+    );
 
     detailsBackdrop.setAttribute(
         "aria-hidden",
         "true"
     );
+
+    detailsPanel.scrollTop = 0;
 }
 
 function resetFilters() {
@@ -766,6 +898,221 @@ window.addEventListener(
     }
 );
 
+detailsDragZone.addEventListener(
+    "pointerdown",
+    (event) => {
+        if (
+            window.innerWidth > 768 ||
+            !detailsPanel.classList.contains(
+                "open"
+            )
+        ) {
+            return;
+        }
+
+        detailsDragging = true;
+
+        detailsDragStartY =
+            event.clientY;
+
+        detailsDragCurrentY =
+            event.clientY;
+
+        detailsDragStartedExpanded =
+            detailsPanel.classList.contains(
+                "expanded"
+            );
+
+        detailsPanel.classList.add(
+            "dragging"
+        );
+
+        detailsDragZone.setPointerCapture(
+            event.pointerId
+        );
+    }
+);
+detailsDragZone.addEventListener(
+    "pointermove",
+    (event) => {
+        if (!detailsDragging) {
+            return;
+        }
+
+        detailsDragCurrentY =
+            event.clientY;
+
+        const deltaY =
+            detailsDragCurrentY -
+            detailsDragStartY;
+
+        let movement = 0;
+
+        if (detailsDragStartedExpanded) {
+            /*
+             * Teljes adatlapnál csak lefelé
+             * engedjük húzni.
+             */
+            movement =
+                Math.max(0, deltaY);
+        } else {
+            if (deltaY < 0) {
+                movement =
+                    Math.max(
+                    -85,
+                    deltaY * 0.72
+                    );
+                } else {
+                    movement =
+                        Math.min(
+                        120,
+                        deltaY
+                    );
+                }
+
+                const readyToExpand =
+                deltaY <= -60;
+
+                detailsPanel.classList.toggle(
+                    "drag-ready",
+                readyToExpand
+                );
+
+                detailsDragHintText.textContent =
+                    readyToExpand
+                    ? "Engedd el a megnyitáshoz"
+                    : "Húzd fel a részletekhez";
+        }   
+
+        detailsPanel.style.transform =
+            `translateY(${movement}px)`;
+    }
+);
+
+function finishDetailsDrag(event) {
+    if (!detailsDragging) {
+        return;
+    }
+
+    detailsDragging = false;
+
+    const deltaY =
+        detailsDragCurrentY -
+        detailsDragStartY;
+
+    detailsPanel.classList.remove(
+        "dragging"
+    );
+
+    detailsPanel.style.transition = "";
+
+    if (
+        detailsDragZone.hasPointerCapture(
+            event.pointerId
+        )
+    ) {
+        detailsDragZone.releasePointerCapture(
+            event.pointerId
+        );
+    }
+
+    /*
+     * Ha csak ráböktél a húzócsíkra.
+     */
+    if (Math.abs(deltaY) < 8) {
+        detailsPanel.style.transform = "";
+
+        if (detailsDragStartedExpanded) {
+            collapsePlaceDetails();
+        } else {
+            expandPlaceDetails();
+        }
+
+        return;
+    }
+
+    /*
+     * TELJES ADATLAP
+     * lefelé húzva visszamegy kicsibe.
+     */
+    if (detailsDragStartedExpanded) {
+        if (deltaY > 65) {
+            collapsePlaceDetails();
+        } else {
+            resetDetailsDragPosition();
+        }
+
+        return;
+    }
+
+    /*
+     * KIS KÁRTYA
+     * felfelé -> teljes adatlap
+     */
+    if (deltaY < -60) {
+        expandPlaceDetails();
+        return;
+    }
+
+    /*
+     * KIS KÁRTYA
+     * lefelé -> bezárás
+     */
+    if (deltaY > 65) {
+        closePlaceDetails();
+        return;
+    }
+
+    /*
+     * Nem húztad el eléggé:
+     * visszapattan az eredeti helyére.
+     */
+    resetDetailsDragPosition();
+}
+
+detailsDragZone.addEventListener(
+    "pointerup",
+    finishDetailsDrag
+);
+
+detailsDragZone.addEventListener(
+    "pointercancel",
+    finishDetailsDrag
+);
+
+detailsContent.addEventListener(
+    "click",
+    (event) => {
+        const clickedImage =
+            event.target.closest(".place-image");
+
+        if (!clickedImage) {
+            return;
+        }
+
+        openImageLightbox(clickedImage);
+    }
+);
+
+imageLightboxClose.addEventListener(
+    "click",
+    (event) => {
+        event.stopPropagation();
+        closeImageLightbox();
+    }
+);
+
+imageLightbox.addEventListener(
+    "click",
+    (event) => {
+        if (
+            event.target === imageLightbox
+        ) {
+            closeImageLightbox();
+        }
+    }
+);
+
 mobileFilterButton.addEventListener(
     "click",
     toggleMobileFilters
@@ -784,15 +1131,41 @@ mobileSearchButton.addEventListener(
 
 detailsBackdrop.addEventListener(
     "click",
-    closePlaceDetails
+    () => {
+        if (
+            window.innerWidth <= 768 &&
+            detailsPanel.classList.contains(
+                "expanded"
+            )
+        ) {
+            collapsePlaceDetails();
+            return;
+        }
+
+        closePlaceDetails();
+    }
 );
 
 document.addEventListener(
     "keydown",
     (event) => {
+        if (event.key !== "Escape") {
+            return;
+        }
+
         if (
-            event.key === "Escape" &&
-            detailsPanel.classList.contains("open")
+            imageLightbox.classList.contains(
+                "open"
+            )
+        ) {
+            closeImageLightbox();
+            return;
+        }
+
+        if (
+            detailsPanel.classList.contains(
+                "open"
+            )
         ) {
             closePlaceDetails();
         }
