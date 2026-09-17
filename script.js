@@ -51,6 +51,7 @@ const detailsDragHint = document.getElementById("detailsDragHint");
 const detailsDragHintText = document.getElementById("detailsDragHintText");
 const selectedCategories = new Set();
 const selectedPriceLevels = new Set();
+const appVersionElements = document.querySelectorAll(".app-version");
 
 
 function escapeHtml(value) {
@@ -406,6 +407,38 @@ function closeImageLightbox() {
 
         lightboxSourceImage = null;
     }, 320);
+}
+
+async function loadAppVersion() {
+    const {
+        data,
+        error
+    } = await supabaseClient
+        .from("app_settings")
+        .select(
+            "version_major, version_minor"
+        )
+        .eq("id", 1)
+        .single();
+
+    if (error) {
+        console.error(
+            "Verzió betöltési hiba:",
+            error
+        );
+
+        return;
+    }
+
+    const version =
+        `v${data.version_major}.${data.version_minor}`;
+
+    appVersionElements.forEach(
+        (element) => {
+            element.textContent =
+                version;
+        }
+    );
 }
 
 function getCategoryMarkerIcon(place) {
@@ -1222,4 +1255,5 @@ window.openPlaceDetails = openPlaceDetails;
 
 initializePriceFilters();
 updatePriceFilterVisibility();
+loadAppVersion();
 loadPlaces();

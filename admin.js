@@ -122,6 +122,75 @@ const imageUrlInput =
 const adminMapElement =
     document.getElementById("adminMap");
 
+const placesAdminView =
+    document.getElementById("placesAdminView");
+
+const notificationsAdminView =
+    document.getElementById("notificationsAdminView");
+
+const placesTabButton =
+    document.getElementById("placesTabButton");
+
+const notificationsTabButton =
+    document.getElementById("notificationsTabButton");
+
+const currentVersionDisplay =
+    document.getElementById("currentVersionDisplay");
+
+const nextVersionDisplay =
+    document.getElementById("nextVersionDisplay");
+
+const releaseSubject =
+    document.getElementById("releaseSubject");
+
+const releaseImageInput =
+    document.getElementById("releaseImageInput");
+
+const releasePreviewFrame =
+    document.getElementById("releasePreviewFrame");
+
+const releasePreviewShell =
+    document.getElementById("releasePreviewShell");
+
+const desktopPreviewButton =
+    document.getElementById("desktopPreviewButton");
+
+const mobilePreviewButton =
+    document.getElementById("mobilePreviewButton");
+
+const subscriberForm =
+    document.getElementById("subscriberForm");
+
+const subscriberEmailInput =
+    document.getElementById("subscriberEmailInput");
+
+const subscribersList =
+    document.getElementById("subscribersList");
+
+const subscriberCount =
+    document.getElementById("subscriberCount");
+
+const subscriberMessage =
+    document.getElementById("subscriberMessage");
+
+const sendTestReleaseButton =
+    document.getElementById("sendTestReleaseButton");
+
+const sendReleaseButton =
+    document.getElementById("sendReleaseButton");
+
+const releaseMessage =
+    document.getElementById("releaseMessage");
+
+let releaseEditor = null;
+
+let releaseSubscribers = [];
+
+let currentReleaseVersion = {
+    major: 1,
+    minor: 1
+};
+
 let adminMap = null;
 let adminMarker = null;
 
@@ -936,6 +1005,748 @@ function escapeHtml(value) {
         .replaceAll("'", "&#039;");
 }
 
+function switchAdminView(view) {
+    const showNotifications =
+        view === "notifications";
+
+    placesAdminView.classList.toggle(
+        "hidden",
+        showNotifications
+    );
+
+    notificationsAdminView.classList.toggle(
+        "hidden",
+        !showNotifications
+    );
+
+    placesTabButton.classList.toggle(
+        "active",
+        !showNotifications
+    );
+
+    notificationsTabButton.classList.toggle(
+        "active",
+        showNotifications
+    );
+
+    if (showNotifications) {
+        initializeReleaseEditor();
+        loadReleaseVersion();
+        loadNotificationSubscribers();
+        updateReleasePreview();
+    }
+}
+
+function initializeReleaseEditor() {
+    if (releaseEditor) {
+        return;
+    }
+
+    releaseEditor = new Quill(
+        "#releaseEditor",
+        {
+            theme: "snow",
+
+            placeholder:
+                "Írd meg az új verzió értesítőjét...",
+
+            modules: {
+                toolbar: {
+                    container: [
+                        [
+                            {
+                                header: [
+                                    1,
+                                    2,
+                                    3,
+                                    false
+                                ]
+                            }
+                        ],
+
+                        [
+                            {
+                                size: [
+                                    "small",
+                                    false,
+                                    "large",
+                                    "huge"
+                                ]
+                            }
+                        ],
+
+                        [
+                            "bold",
+                            "italic",
+                            "underline",
+                            "strike"
+                        ],
+
+                        [
+                            {
+                                color: []
+                            },
+                            {
+                                background: []
+                            }
+                        ],
+
+                        [
+                            {
+                                list: "ordered"
+                            },
+                            {
+                                list: "bullet"
+                            }
+                        ],
+
+                        [
+                            {
+                                align: []
+                            }
+                        ],
+
+                        [
+                            "blockquote",
+                            "link",
+                            "image"
+                        ],
+
+                        [
+                            "clean"
+                        ]
+                    ],
+
+                    handlers: {
+                        image: function () {
+                            chooseReleaseImage();
+                        }
+                    }
+                }
+            }
+        }
+    );
+
+    releaseEditor.root.addEventListener(
+    "paste",
+    async (event) => {
+        const items =
+            Array.from(
+                event.clipboardData?.items || []
+            );
+
+        const imageItem =
+            items.find(
+                (item) =>
+                    item.type.startsWith(
+                        "image/"
+                    )
+            );
+
+        if (!imageItem) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        const imageFile =
+            imageItem.getAsFile();
+
+        if (!imageFile) {
+            return;
+        }
+
+        try {
+            const imageUrl =
+                await uploadReleaseImage(
+                    imageFile
+                );
+
+            const range =
+                releaseEditor.getSelection(
+                    true
+                );
+
+            releaseEditor.insertEmbed(
+                range.index,
+                "image",
+                imageUrl,
+                "user"
+            );
+
+            releaseEditor.setSelection(
+                range.index + 1,
+                0
+            );
+
+        } catch (error) {
+            console.error(
+                "Beillesztett kép feltöltési hiba:",
+                error
+            );
+
+            alert(
+                "Nem sikerült feltölteni a beillesztett képet."
+            );
+        }
+    },
+    true
+);
+
+    releaseEditor.on(
+        "text-change",
+        updateReleasePreview
+    );
+}
+
+function chooseReleaseImage() {
+    releaseImageInput.value = "";
+    releaseImageInput.click();
+}
+
+
+async function uploadReleaseImage(file) {
+    const compressedImage =
+        await compressImageToWebp(file);
+
+    const storagePath =
+        `email-notifications/${crypto.randomUUID()}.webp`;
+
+    const {
+        error: uploadError
+    } = await supabaseClient.storage
+        .from("place-images")
+        .upload(
+            storagePath,
+            compressedImage,
+            {
+                contentType: "image/webp",
+                cacheControl: "31536000",
+                upsert: false
+            }
+        );
+
+    if (uploadError) {
+        throw uploadError;
+    }
+
+    const {
+        data
+    } = supabaseClient.storage
+        .from("place-images")
+        .getPublicUrl(storagePath);
+
+    if (!data?.publicUrl) {
+        throw new Error(
+            "Nem sikerült létrehozni a kép URL-jét."
+        );
+    }
+
+    return data.publicUrl;
+}
+
+async function loadReleaseVersion() {
+    const {
+        data,
+        error
+    } = await supabaseClient
+        .from("app_settings")
+        .select(
+            "version_major, version_minor"
+        )
+        .eq("id", 1)
+        .single();
+
+    if (error) {
+        console.error(
+            "Verzió betöltési hiba:",
+            error
+        );
+
+        return;
+    }
+
+    currentReleaseVersion = {
+        major: data.version_major,
+        minor: data.version_minor
+    };
+
+    currentVersionDisplay.textContent =
+        `v${data.version_major}.${data.version_minor}`;
+
+    nextVersionDisplay.textContent =
+        `v${data.version_major}.${data.version_minor + 1}`;
+
+    updateReleasePreview();
+}
+
+function buildReleaseEmailHtml() {
+    const nextVersion =
+        `${currentReleaseVersion.major}.` +
+        `${currentReleaseVersion.minor + 1}`;
+
+    const content =
+        releaseEditor
+            ? releaseEditor.root.innerHTML
+            : "";
+
+    return `
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        background: #080d14;
+        font-family:
+            Arial,
+            Helvetica,
+            sans-serif;
+    }
+
+    .email-wrapper {
+        width: 100%;
+        padding: 34px 14px;
+        box-sizing: border-box;
+    }
+
+    .email-card {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 34px;
+        box-sizing: border-box;
+
+        border: 1px solid #263447;
+        border-radius: 18px;
+
+        background: #101923;
+        color: #e7edf6;
+    }
+
+    .email-brand {
+        margin-bottom: 25px;
+
+        color: #ffffff;
+
+        font-size: 22px;
+        font-weight: 700;
+    }
+
+    .email-version {
+        display: inline-block;
+
+        margin-left: 8px;
+        padding: 4px 8px;
+
+        border-radius: 999px;
+
+        background: #172e4d;
+        color: #93c5fd;
+
+        font-size: 13px;
+    }
+
+    .email-content {
+        color: #dce5ef;
+
+        font-size: 16px;
+        line-height: 1.65;
+    }
+
+    .email-content h1,
+    .email-content h2,
+    .email-content h3 {
+        color: #ffffff;
+    }
+
+    .email-content a {
+        color: #60a5fa;
+    }
+
+    .email-content img {
+        max-width: 100%;
+        height: auto;
+
+        border-radius: 12px;
+    }
+
+    .ql-size-small {
+        font-size: 12px;
+    }
+
+    .ql-size-large {
+        font-size: 20px;
+    }
+
+    .ql-size-huge {
+        font-size: 28px;
+    }
+
+    .ql-align-center {
+        text-align: center;
+    }
+
+    .ql-align-right {
+        text-align: right;
+    }
+
+    .ql-align-justify {
+        text-align: justify;
+    }
+
+    .map-button {
+        display: inline-block;
+
+        margin-top: 26px;
+        padding: 13px 20px;
+
+        border-radius: 10px;
+
+        background: #2563eb;
+        color: #ffffff !important;
+
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .email-footer {
+        margin-top: 32px;
+        padding-top: 18px;
+
+        border-top: 1px solid #263447;
+
+        color: #718096;
+
+        font-size: 12px;
+        line-height: 1.5;
+    }
+</style>
+</head>
+
+<body>
+
+<div class="email-wrapper">
+
+    <div class="email-card">
+
+        <div class="email-brand">
+            Vasti Map
+            <span class="email-version">
+                v${nextVersion}
+            </span>
+        </div>
+
+        <div class="email-content">
+            ${content}
+        </div>
+
+        <a
+            class="map-button"
+            href="https://vastikrisz.github.io/vasti_map/"
+            target="_blank"
+        >
+            Térkép megnyitása
+        </a>
+
+        <div class="email-footer">
+            Ezt az emailt azért kaptad,
+            mert feliratkoztál a Vasti Map
+            verzióértesítőire.
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
+    `;
+}
+
+function updateReleasePreview() {
+    if (!releasePreviewFrame) {
+        return;
+    }
+
+    releasePreviewFrame.srcdoc =
+        buildReleaseEmailHtml();
+}
+
+async function loadNotificationSubscribers() {
+    const {
+        data,
+        error
+    } = await supabaseClient
+        .from("notification_subscribers")
+        .select(
+            "id, email, is_active, created_at"
+        )
+        .order(
+            "created_at",
+            {
+                ascending: true
+            }
+        );
+
+    if (error) {
+        console.error(
+            "Címzettlista betöltési hiba:",
+            error
+        );
+
+        subscriberMessage.textContent =
+            "Nem sikerült betölteni a címzetteket.";
+
+        subscriberMessage.className =
+            "message error";
+
+        return;
+    }
+
+    releaseSubscribers =
+        data || [];
+
+    renderNotificationSubscribers();
+}
+
+
+function renderNotificationSubscribers() {
+    const activeCount =
+        releaseSubscribers.filter(
+            (subscriber) =>
+                subscriber.is_active
+        ).length;
+
+    subscriberCount.textContent =
+        `${activeCount} aktív / ` +
+        `${releaseSubscribers.length} összesen`;
+
+    if (
+        releaseSubscribers.length === 0
+    ) {
+        subscribersList.innerHTML = `
+            <div class="empty-list">
+                Még nincs címzett.
+            </div>
+        `;
+
+        return;
+    }
+
+    subscribersList.innerHTML =
+        releaseSubscribers
+            .map(
+                (subscriber) => `
+                    <div
+                        class="subscriber-item"
+                    >
+                        <span
+                            class="subscriber-email"
+                        >
+                            ${escapeHtml(
+                                subscriber.email
+                            )}
+                        </span>
+
+                        <div
+                            class="subscriber-actions"
+                        >
+                            <button
+                                type="button"
+                                class="
+                                    subscriber-toggle-button
+                                    ${
+                                        subscriber.is_active
+                                            ? ""
+                                            : "inactive"
+                                    }
+                                "
+                                data-subscriber-toggle="
+                                    ${subscriber.id}
+                                "
+                            >
+                                ${
+                                    subscriber.is_active
+                                        ? "Aktív"
+                                        : "Inaktív"
+                                }
+                            </button>
+
+                            <button
+                                type="button"
+                                class="
+                                    subscriber-delete-button
+                                "
+                                data-subscriber-delete="
+                                    ${subscriber.id}
+                                "
+                            >
+                                Törlés
+                            </button>
+                        </div>
+                    </div>
+                `
+            )
+            .join("");
+}
+
+async function sendReleaseEmail(
+    testMode
+) {
+    const subject =
+        releaseSubject.value.trim();
+
+    const plainText =
+        releaseEditor
+            ?.getText()
+            .trim() || "";
+
+    const hasImage =
+        Boolean(
+            releaseEditor
+                ?.root
+                .querySelector("img")
+        );
+
+    if (!subject) {
+        releaseMessage.textContent =
+            "Add meg az email tárgyát.";
+
+        releaseMessage.className =
+            "message error";
+
+        return;
+    }
+
+    if (!plainText && !hasImage) {
+        releaseMessage.textContent =
+            "Írd meg az email tartalmát.";
+
+        releaseMessage.className =
+            "message error";
+
+        return;
+    }
+
+    if (!testMode) {
+        const activeCount =
+            releaseSubscribers.filter(
+                (subscriber) =>
+                    subscriber.is_active
+            ).length;
+
+        if (activeCount === 0) {
+            releaseMessage.textContent =
+                "Nincs aktív címzett.";
+
+            releaseMessage.className =
+                "message error";
+
+            return;
+        }
+
+        const confirmed =
+            confirm(
+                `Biztosan kiküldöd ` +
+                `${activeCount} címzettnek?`
+            );
+
+        if (!confirmed) {
+            return;
+        }
+    }
+
+    sendTestReleaseButton.disabled = true;
+    sendReleaseButton.disabled = true;
+
+    releaseMessage.textContent =
+        testMode
+            ? "Próbaemail küldése..."
+            : "Verzióértesítő küldése...";
+
+    releaseMessage.className =
+        "message";
+
+    try {
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .functions
+                .invoke(
+                    "send-release-email",
+                    {
+                        body: {
+                            subject,
+                            html:
+                                buildReleaseEmailHtml(),
+
+                            test:
+                                testMode
+                        }
+                    }
+                );
+
+        if (error) {
+            throw error;
+        }
+
+        if (!data?.ok) {
+            throw new Error(
+                data?.error ||
+                "Ismeretlen küldési hiba."
+            );
+        }
+
+        if (testMode) {
+            releaseMessage.textContent =
+                "A próbaemail sikeresen elküldve.";
+
+            releaseMessage.className =
+                "message success";
+        } else {
+            releaseMessage.textContent =
+                `${data.sent} email sikeresen elküldve. ` +
+                `Az új verzió: v${data.newVersion}.`;
+
+            releaseMessage.className =
+                "message success";
+
+            releaseSubject.value = "";
+
+            releaseEditor.setContents([]);
+
+            await loadReleaseVersion();
+
+            updateReleasePreview();
+        }
+
+    } catch (error) {
+        console.error(
+            "Emailküldési hiba:",
+            error
+        );
+
+        releaseMessage.textContent =
+            `Küldési hiba: ${error.message}`;
+
+        releaseMessage.className =
+            "message error";
+
+    } finally {
+        sendTestReleaseButton.disabled =
+            false;
+
+        sendReleaseButton.disabled =
+            false;
+    }
+}
+
 function showMessage(text, type = "") {
     loginMessage.textContent = text;
     loginMessage.className = "message";
@@ -1454,6 +2265,251 @@ logoutButton.addEventListener(
         showLogin();
         loginForm.reset();
         showMessage("");
+    }
+);
+
+placesTabButton.addEventListener(
+    "click",
+    () => {
+        switchAdminView("places");
+    }
+);
+
+
+notificationsTabButton.addEventListener(
+    "click",
+    () => {
+        switchAdminView(
+            "notifications"
+        );
+    }
+);
+
+
+releaseSubject.addEventListener(
+    "input",
+    updateReleasePreview
+);
+
+
+desktopPreviewButton.addEventListener(
+    "click",
+    () => {
+        releasePreviewShell.classList.remove(
+            "mobile-preview"
+        );
+
+        desktopPreviewButton.classList.add(
+            "active"
+        );
+
+        mobilePreviewButton.classList.remove(
+            "active"
+        );
+    }
+);
+
+
+mobilePreviewButton.addEventListener(
+    "click",
+    () => {
+        releasePreviewShell.classList.add(
+            "mobile-preview"
+        );
+
+        mobilePreviewButton.classList.add(
+            "active"
+        );
+
+        desktopPreviewButton.classList.remove(
+            "active"
+        );
+    }
+);
+
+
+releaseImageInput.addEventListener(
+    "change",
+    async () => {
+        const file =
+            releaseImageInput.files?.[0];
+
+        if (!file) {
+            return;
+        }
+
+        try {
+            const imageUrl =
+                await uploadReleaseImage(
+                    file
+                );
+
+            const range =
+                releaseEditor.getSelection(
+                    true
+                );
+
+            releaseEditor.insertEmbed(
+                range.index,
+                "image",
+                imageUrl,
+                "user"
+            );
+
+            releaseEditor.setSelection(
+                range.index + 1,
+                0
+            );
+
+        } catch (error) {
+            console.error(
+                "Emailkép feltöltési hiba:",
+                error
+            );
+
+            alert(
+                "Nem sikerült feltölteni a képet."
+            );
+        }
+    }
+);
+
+
+subscriberForm.addEventListener(
+    "submit",
+    async (event) => {
+        event.preventDefault();
+
+        const email =
+            subscriberEmailInput
+                .value
+                .trim()
+                .toLowerCase();
+
+        if (!email) {
+            return;
+        }
+
+        const {
+            error
+        } = await supabaseClient
+            .from(
+                "notification_subscribers"
+            )
+            .insert({
+                email,
+                is_active: true
+            });
+
+        if (error) {
+            subscriberMessage.textContent =
+                error.code === "23505"
+                    ? "Ez az email már szerepel a listában."
+                    : "Nem sikerült hozzáadni.";
+
+            subscriberMessage.className =
+                "message error";
+
+            return;
+        }
+
+        subscriberEmailInput.value = "";
+
+        subscriberMessage.textContent =
+            "Címzett hozzáadva.";
+
+        subscriberMessage.className =
+            "message success";
+
+        await loadNotificationSubscribers();
+    }
+);
+
+
+subscribersList.addEventListener(
+    "click",
+    async (event) => {
+        const toggleButton =
+            event.target.closest(
+                "[data-subscriber-toggle]"
+            );
+
+        const deleteButton =
+            event.target.closest(
+                "[data-subscriber-delete]"
+            );
+
+        if (toggleButton) {
+            const id =
+                toggleButton.dataset
+                    .subscriberToggle
+                    .trim();
+
+            const subscriber =
+                releaseSubscribers.find(
+                    (item) =>
+                        item.id === id
+                );
+
+            if (!subscriber) {
+                return;
+            }
+
+            await supabaseClient
+                .from(
+                    "notification_subscribers"
+                )
+                .update({
+                    is_active:
+                        !subscriber.is_active
+                })
+                .eq("id", id);
+
+            await loadNotificationSubscribers();
+
+            return;
+        }
+
+        if (deleteButton) {
+            const id =
+                deleteButton.dataset
+                    .subscriberDelete
+                    .trim();
+
+            const confirmed =
+                confirm(
+                    "Biztosan törlöd ezt a címzettet?"
+                );
+
+            if (!confirmed) {
+                return;
+            }
+
+            await supabaseClient
+                .from(
+                    "notification_subscribers"
+                )
+                .delete()
+                .eq("id", id);
+
+            await loadNotificationSubscribers();
+        }
+    }
+);
+
+
+sendTestReleaseButton.addEventListener(
+    "click",
+    () => {
+        sendReleaseEmail(true);
+    }
+);
+
+
+sendReleaseButton.addEventListener(
+    "click",
+    () => {
+        sendReleaseEmail(false);
     }
 );
 

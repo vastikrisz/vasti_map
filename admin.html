@@ -10,10 +10,8 @@
 
     <title>Térkép adminisztráció</title>
 
-    <link
-        rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"
-    >
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
     <link rel="stylesheet" href="admin.css">
 </head>
 
@@ -101,17 +99,38 @@
 
     <p id="userEmail" class="user-email"></p>
 
-    <div class="dashboard-grid">
+    <div class="admin-tabs">
+        <button
+            id="placesTabButton"
+            class="admin-tab active"
+            type="button"
+            >
+            Helyek
+        </button>
 
-    <form id="placeForm" class="place-form">
+        <button
+            id="notificationsTabButton"
+            class="admin-tab"
+            type="button"
+            >
+            Értesítések
+        </button>
+    </div>
+
+    <div
+        id="placesAdminView"
+        class="dashboard-grid"
+        >
+
+        <form id="placeForm" class="place-form">
 
         <div
             id="editModeBanner"
             class="edit-mode-banner full-width hidden"
->
-    <strong>Szerkesztési mód</strong>
+            >
+            <strong>Szerkesztési mód</strong>
 
-    <span id="editModePlaceName"></span>
+            <span id="editModePlaceName"></span>
         </div>
 
         <div class="form-group full-width">
@@ -557,6 +576,175 @@
 
     </div>
 
+    <section
+    id="notificationsAdminView"
+    class="notifications-view hidden"
+>
+    <section class="notification-editor-panel">
+
+        <div class="notification-heading">
+            <div>
+                <h2>Verzióértesítő</h2>
+                <p>
+                    Az email kiküldése után a verziószám
+                    automatikusan frissül.
+                </p>
+            </div>
+
+            <div class="version-box">
+                <div>
+                    <span>Jelenlegi</span>
+                    <strong id="currentVersionDisplay">
+                        v1.1
+                    </strong>
+                </div>
+
+                <div class="version-arrow">
+                    →
+                </div>
+
+                <div>
+                    <span>Következő</span>
+                    <strong id="nextVersionDisplay">
+                        v1.2
+                    </strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="notification-field">
+            <label for="releaseSubject">
+                Email tárgya
+            </label>
+
+            <input
+                id="releaseSubject"
+                type="text"
+                placeholder="Például: Elkészült az új mobilos felület"
+            >
+        </div>
+
+        <div class="notification-field">
+            <label>
+                Email tartalma
+            </label>
+
+            <div id="releaseEditor"></div>
+        </div>
+
+        <input
+            id="releaseImageInput"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            hidden
+        >
+
+        <section class="subscriber-manager">
+            <div class="subscriber-header">
+                <div>
+                    <h3>Címzettek</h3>
+                    <p id="subscriberCount">
+                        Betöltés...
+                    </p>
+                </div>
+            </div>
+
+            <form
+                id="subscriberForm"
+                class="subscriber-add-form"
+            >
+                <input
+                    id="subscriberEmailInput"
+                    type="email"
+                    placeholder="email@pelda.hu"
+                    required
+                >
+
+                <button type="submit">
+                    Hozzáadás
+                </button>
+            </form>
+
+            <div
+                id="subscribersList"
+                class="subscribers-list"
+            ></div>
+
+            <p
+                id="subscriberMessage"
+                class="message"
+                aria-live="polite"
+            ></p>
+        </section>
+
+        <div class="release-actions">
+            <button
+                id="sendTestReleaseButton"
+                class="secondary-button"
+                type="button"
+            >
+                Próbaemail küldése
+            </button>
+
+            <button
+                id="sendReleaseButton"
+                class="release-send-button"
+                type="button"
+            >
+                Küldés mindenkinek
+            </button>
+        </div>
+
+        <p
+            id="releaseMessage"
+            class="message"
+            aria-live="polite"
+        ></p>
+    </section>
+
+
+    <section class="notification-preview-panel">
+
+        <div class="preview-header">
+            <div>
+                <h2>Előnézet</h2>
+                <p>
+                    Így fog kinézni a kiküldött email.
+                </p>
+            </div>
+
+            <div class="preview-mode-buttons">
+                <button
+                    id="desktopPreviewButton"
+                    class="preview-mode-button active"
+                    type="button"
+                >
+                    Desktop
+                </button>
+
+                <button
+                    id="mobilePreviewButton"
+                    class="preview-mode-button"
+                    type="button"
+                >
+                    Mobil
+                </button>
+            </div>
+        </div>
+
+        <div
+            id="releasePreviewShell"
+            class="release-preview-shell"
+        >
+            <iframe
+                id="releasePreviewFrame"
+                title="Email előnézet"
+            ></iframe>
+        </div>
+
+    </section>
+</section>
+
     <a class="back-link" href="index.html">
         Térkép megnyitása
     </a>
@@ -565,14 +753,10 @@
 
     </main>
 
-    <script
-        src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"
-    ></script>
-    <script
-        src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
-    ></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
     <script src="admin.js"></script>
 </body>
 </html>

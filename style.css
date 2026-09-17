@@ -574,6 +574,26 @@ a {
     transform: scale(1);
 }
 
+.app-version {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: fit-content;
+    margin-top: 4px;
+    padding: 3px 7px;
+
+    border: 1px solid rgba(96, 165, 250, 0.22);
+    border-radius: 999px;
+
+    background: rgba(37, 99, 235, 0.14);
+    color: #93c5fd;
+
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+}
+
 @media (max-width: 768px) {
     .mobile-topbar {
     position: fixed;
@@ -597,6 +617,9 @@ a {
 }
 
 .mobile-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
     font-size: 14px;
     font-weight: 700;
     line-height: 1.15;
