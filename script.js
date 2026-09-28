@@ -1,3 +1,9 @@
+// State
+const MOBILE_BREAKPOINT = 768;
+const DRAG_TAP_THRESHOLD = 8;
+const DRAG_EXPAND_THRESHOLD = 60;
+const DRAG_COLLAPSE_THRESHOLD = 65;
+
 let places = [];
 let allCategories = [];
 let lightboxSourceImage = null;
@@ -6,29 +12,27 @@ let detailsDragStartY = 0;
 let detailsDragCurrentY = 0;
 let detailsDragStartedExpanded = false;
 
+// Map
 const map = L.map("map", {
-    zoomControl: true,
-    minZoom: 3,
-    maxZoom: 19
+	zoomControl: true,
+	minZoom: 3,
+	maxZoom: 19
 }).setView([47.1625, 19.5033], 7);
-
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: "&copy; OpenStreetMap közreműködők"
+	maxZoom: 19,
+	attribution: "&copy; OpenStreetMap közreműködők"
 }).addTo(map);
-
 const markerLayer = L.markerClusterGroup({
-    showCoverageOnHover: false,
-    zoomToBoundsOnClick: true,
-    spiderfyOnMaxZoom: true,
-    removeOutsideVisibleBounds: true,
-    maxClusterRadius: 55
+	showCoverageOnHover: false,
+	zoomToBoundsOnClick: true,
+	spiderfyOnMaxZoom: true,
+	removeOutsideVisibleBounds: true,
+	maxClusterRadius: 55
 });
-
 markerLayer.addTo(map);
-
 const markerByPlaceId = new Map();
 
+// Elements
 const detailsPanel = document.getElementById("detailsPanel");
 const detailsContent = document.getElementById("detailsContent");
 const closeDetailsButton = document.getElementById("closeDetailsButton");
@@ -38,6 +42,7 @@ const categoryFilters = document.getElementById("categoryFilters");
 const resetFiltersButton = document.getElementById("resetFiltersButton");
 const priceFilters = document.getElementById("priceFilters");
 const priceFilterSection = document.querySelector(".price-filter-section");
+const priceFilterButtons = priceFilters.querySelectorAll("[data-price-level]");
 const filterPanel = document.getElementById("filterPanel");
 const mobileFilterToggle = document.getElementById("mobileFilterToggle");
 const detailsBackdrop = document.getElementById("detailsBackdrop");
@@ -47,1212 +52,704 @@ const imageLightbox = document.getElementById("imageLightbox");
 const imageLightboxImage = document.getElementById("imageLightboxImage");
 const imageLightboxClose = document.getElementById("imageLightboxClose");
 const detailsDragZone = document.getElementById("detailsDragZone");
-const detailsDragHint = document.getElementById("detailsDragHint");
 const detailsDragHintText = document.getElementById("detailsDragHintText");
 const selectedCategories = new Set();
 const selectedPriceLevels = new Set();
 const appVersionElements = document.querySelectorAll(".app-version");
 
-
+// Helpers
 function escapeHtml(value) {
-    return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+	return String(value)
+		.replaceAll("&", "&amp;")
+		.replaceAll("<", "&lt;")
+		.replaceAll(">", "&gt;")
+		.replaceAll('"', "&quot;")
+		.replaceAll("'", "&#039;");
 }
 
+// Data
 async function loadPlaces() {
-    const { data, error } = await supabaseClient
-        .from("places")
-        .select(`
-            id,
-            name,
-            address,
-            city,
-            latitude,
-            longitude,
-            website,
-            description,
-            ticket_info,
-            opening_hours,
-            categories,
-            price_level,
-            image_urls
-        `)
-        .eq("is_published", true)
-        .order("name", {
-            ascending: true
-        });
-
-    if (error) {
-        console.error(
-            "Nem sikerült betölteni a helyeket:",
-            error
-        );
-
-        alert(
-            "Nem sikerült betölteni a nevezetességeket."
-        );
-
-        return;
-    }
-
-    places = data.map((place) => ({
-        id: Number(place.id),
-
-        name: place.name,
-        address: place.address,
-        city: place.city || "",
-
-        latitude: Number(place.latitude),
-        longitude: Number(place.longitude),
-
-        website: place.website || "",
-
-        description:
-            place.description || "Nincs megadva leírás.",
-
-        ticketInfo:
-            place.ticket_info ||
-            "Nincs megadva jegyinformáció.",
-
-        openingHours:
-            place.opening_hours ||
-            "Nincs megadva nyitvatartás.",
-
-        categories:
-            Array.isArray(place.categories)
-                ? place.categories
-                : [],
-
-        priceLevel:
-            place.price_level || null,
-
-        image:
-            Array.isArray(place.image_urls) &&
-            place.image_urls.length > 0
-                ? place.image_urls[0]
-                : ""
-    }));
-
-    allCategories = [
-        ...new Set(
-            places.flatMap(
-                (place) => place.categories
-            )
-        )
-    ].sort(
-        (a, b) => a.localeCompare(b, "hu")
-    );
-
-    renderCategoryFilters();
-    renderMarkers();
-
-    console.log(
-        `${places.length} hely betöltve az adatbázisból.`
-    );
+	const { data, error } = await supabaseClient
+		.from("places")
+		.select(`
+			id,
+			name,
+			address,
+			city,
+			latitude,
+			longitude,
+			website,
+			description,
+			ticket_info,
+			opening_hours,
+			categories,
+			price_level,
+			image_urls
+		`)
+		.eq("is_published", true)
+		.order("name", {
+			ascending: true
+		});
+	if (error) {
+		console.error("Nem sikerült betölteni a helyeket:", error);
+		alert("Nem sikerült betölteni a nevezetességeket.");
+		return;
+	}
+	places = data.map((place) => ({
+		id: Number(place.id),
+		name: place.name,
+		address: place.address,
+		city: place.city || "",
+		latitude: Number(place.latitude),
+		longitude: Number(place.longitude),
+		website: place.website || "",
+		description: place.description || "Nincs megadva leírás.",
+		ticketInfo: place.ticket_info ||
+			"Nincs megadva jegyinformáció.",
+		openingHours: place.opening_hours ||
+			"Nincs megadva nyitvatartás.",
+		categories: Array.isArray(place.categories)
+			? place.categories
+			: [],
+		priceLevel: place.price_level || null,
+		image: Array.isArray(place.image_urls) &&
+			place.image_urls.length > 0
+			? place.image_urls[0]
+			: ""
+	}));
+	places.forEach((place) => {
+		place.searchText = [place.name, place.address, place.city, ...place.categories]
+			.join(" ")
+			.toLocaleLowerCase("hu");
+	});
+	allCategories = [
+		...new Set(places.flatMap((place) => place.categories))
+	].sort((a, b) => a.localeCompare(b, "hu"));
+	renderCategoryFilters();
+	renderMarkers();
+	console.log(`${places.length} hely betöltve az adatbázisból.`);
 }
 
+// Filters
 function renderCategoryFilters() {
-    categoryFilters.innerHTML = "";
-
-    allCategories.forEach((category) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "category-button";
-        button.textContent = category;
-        button.dataset.category = category;
-
-        button.addEventListener("click", () => {
-            if (selectedCategories.has(category)) {
-                selectedCategories.delete(category);
-                button.classList.remove("active");
-            } else {
-                selectedCategories.add(category);
-                button.classList.add("active");
-            }
-
-            updatePriceFilterVisibility();
-            renderMarkers();
-        });
-
-        categoryFilters.appendChild(button);
-    });
+	categoryFilters.innerHTML = "";
+	allCategories.forEach((category) => {
+		const button = document.createElement("button");
+		button.type = "button";
+		button.className = "category-button";
+		button.textContent = category;
+		button.dataset.category = category;
+		button.addEventListener("click", () => {
+			if (selectedCategories.has(category)) {
+				selectedCategories.delete(category);
+				button.classList.remove("active");
+			} else {
+				selectedCategories.add(category);
+				button.classList.add("active");
+			}
+			updatePriceFilterVisibility();
+			renderMarkers();
+		});
+		categoryFilters.appendChild(button);
+	});
 }
-
 function initializePriceFilters() {
-    priceFilters
-        .querySelectorAll("[data-price-level]")
-        .forEach((button) => {
-            button.addEventListener(
-                "click",
-                () => {
-                    const priceLevel =
-                        button.dataset.priceLevel;
-
-                    if (
-                        selectedPriceLevels.has(
-                            priceLevel
-                        )
-                    ) {
-                        selectedPriceLevels.delete(
-                            priceLevel
-                        );
-
-                        button.classList.remove(
-                            "active"
-                        );
-                    } else {
-                        selectedPriceLevels.add(
-                            priceLevel
-                        );
-
-                        button.classList.add(
-                            "active"
-                        );
-                    }
-
-                    renderMarkers();
-                }
-            );
-        });
+	priceFilterButtons.forEach((button) => {
+		button.addEventListener("click", () => {
+			const priceLevel = button.dataset.priceLevel;
+			if (selectedPriceLevels.has(priceLevel)) {
+				selectedPriceLevels.delete(priceLevel);
+				button.classList.remove("active");
+			} else {
+				selectedPriceLevels.add(priceLevel);
+				button.classList.add("active");
+			}
+			renderMarkers();
+		});
+	});
 }
-
 function isFoodPlace(place) {
-    return Array.isArray(place.categories) &&
-        place.categories.includes("Kajálda");
+	return Array.isArray(place.categories) &&
+		place.categories.includes("Kajálda");
 }
-
 function updatePriceFilterVisibility() {
-    const foodCategorySelected =
-        selectedCategories.has("Kajálda");
-
-    priceFilterSection.style.display =
-        foodCategorySelected
-            ? ""
-            : "none";
-
-    if (!foodCategorySelected) {
-        selectedPriceLevels.clear();
-
-        priceFilters
-            .querySelectorAll("[data-price-level]")
-            .forEach((button) => {
-                button.classList.remove("active");
-            });
-    }
+	const foodCategorySelected = selectedCategories.has("Kajálda");
+	priceFilterSection.style.display =
+		foodCategorySelected
+			? ""
+			: "none";
+	if (!foodCategorySelected) {
+		selectedPriceLevels.clear();
+		priceFilterButtons.forEach((button) => {
+			button.classList.remove("active");
+		});
+	}
 }
-
 function getVisiblePlaces() {
-    return places.filter((place) => {
-        const categoryMatches =
-            selectedCategories.size === 0 ||
-            place.categories.some(
-                (category) =>
-                    selectedCategories.has(category)
-            );
-
-        if (!categoryMatches) {
-            return false;
-        }
-
-        const foodPlace =
-            isFoodPlace(place);
-
-        if (!foodPlace) {
-            return true;
-        }
-
-        const priceMatches =
-            selectedPriceLevels.size === 0 ||
-            selectedPriceLevels.has(
-                place.priceLevel
-            );
-
-        return priceMatches;
-    });
+	return places.filter((place) => {
+		const categoryMatches = selectedCategories.size === 0 ||
+			place.categories.some((category) => selectedCategories.has(category));
+		if (!categoryMatches) {
+			return false;
+		}
+		const foodPlace = isFoodPlace(place);
+		if (!foodPlace) {
+			return true;
+		}
+		const priceMatches = selectedPriceLevels.size === 0 ||
+			selectedPriceLevels.has(place.priceLevel);
+		return priceMatches;
+	});
 }
 
+// Markers
 const CATEGORY_MARKER_CONFIG = {
-    "Állatkert": {
-        symbol: "🐾",
-        color: "#2e7d32"
-    },
-
-    "Múzeum": {
-        symbol: "🏛",
-        color: "#7b1fa2"
-    },
-
-    "Vár / kastély": {
-        symbol: "🏰",
-        color: "#6d4c41"
-    },
-
-    "Séta / pihenőhely": {
-        symbol: "🌳",
-        color: "#00897b"
-    },
-
-    "Túra / kirándulóhely": {
-        symbol: "▲",
-        color: "#455a64"
-    },
-
-    "Kajálda": {
-        symbol: "🍴",
-        color: "#e65100"
-    },
-
-    "Helyi érdekesség": {
-        symbol: "★",
-        color: "#c2185b"
-    }
+	"Állatkert": {
+		symbol: "🐾",
+		color: "#2e7d32"
+	},
+	"Múzeum": {
+		symbol: "🏛",
+		color: "#7b1fa2"
+	},
+	"Vár / kastély": {
+		symbol: "🏰",
+		color: "#6d4c41"
+	},
+	"Séta / pihenőhely": {
+		symbol: "🌳",
+		color: "#00897b"
+	},
+	"Túra / kirándulóhely": {
+		symbol: "▲",
+		color: "#455a64"
+	},
+	"Kajálda": {
+		symbol: "🍴",
+		color: "#e65100"
+	},
+	"Helyi érdekesség": {
+		symbol: "★",
+		color: "#c2185b"
+	}
 };
-
-
 const DEFAULT_MARKER_CONFIG = {
-    symbol: "●",
-    color: "#546e7a"
+	symbol: "●",
+	color: "#546e7a"
 };
 
+// Lightbox
 function openImageLightbox(sourceImage) {
-    lightboxSourceImage = sourceImage;
-
-    const rect =
-        sourceImage.getBoundingClientRect();
-
-    imageLightboxImage.src =
-        sourceImage.src;
-
-    imageLightboxImage.alt =
-        sourceImage.alt || "";
-
-    imageLightboxImage.style.top =
-        `${rect.top}px`;
-
-    imageLightboxImage.style.left =
-        `${rect.left}px`;
-
-    imageLightboxImage.style.width =
-        `${rect.width}px`;
-
-    imageLightboxImage.style.height =
-        `${rect.height}px`;
-
-    imageLightboxImage.style.borderRadius =
-        "14px";
-
-    imageLightbox.classList.add("open");
-
-    imageLightbox.setAttribute(
-        "aria-hidden",
-        "false"
-    );
-
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            imageLightboxImage.style.top =
-                "6dvh";
-
-            imageLightboxImage.style.left =
-                "4vw";
-
-            imageLightboxImage.style.width =
-                "92vw";
-
-            imageLightboxImage.style.height =
-                "88dvh";
-
-            imageLightboxImage.style.borderRadius =
-                "18px";
-        });
-    });
+	lightboxSourceImage = sourceImage;
+	const rect = sourceImage.getBoundingClientRect();
+	imageLightboxImage.src = sourceImage.src;
+	imageLightboxImage.alt = sourceImage.alt || "";
+	imageLightboxImage.style.top = `${rect.top}px`;
+	imageLightboxImage.style.left = `${rect.left}px`;
+	imageLightboxImage.style.width = `${rect.width}px`;
+	imageLightboxImage.style.height = `${rect.height}px`;
+	imageLightboxImage.style.borderRadius = "14px";
+	imageLightbox.classList.add("open");
+	imageLightbox.setAttribute("aria-hidden", "false");
+	requestAnimationFrame(() => {
+		requestAnimationFrame(() => {
+			imageLightboxImage.style.top = "6dvh";
+			imageLightboxImage.style.left = "4vw";
+			imageLightboxImage.style.width = "92vw";
+			imageLightboxImage.style.height = "88dvh";
+			imageLightboxImage.style.borderRadius = "18px";
+		});
+	});
 }
-
 function closeImageLightbox() {
-    if (!lightboxSourceImage) {
-        return;
-    }
-
-    const rect =
-        lightboxSourceImage.getBoundingClientRect();
-
-    imageLightboxImage.style.top =
-        `${rect.top}px`;
-
-    imageLightboxImage.style.left =
-        `${rect.left}px`;
-
-    imageLightboxImage.style.width =
-        `${rect.width}px`;
-
-    imageLightboxImage.style.height =
-        `${rect.height}px`;
-
-    imageLightboxImage.style.borderRadius =
-        "14px";
-
-    imageLightbox.classList.remove("open");
-
-    setTimeout(() => {
-        imageLightbox.setAttribute(
-            "aria-hidden",
-            "true"
-        );
-
-        imageLightboxImage.src = "";
-
-        lightboxSourceImage = null;
-    }, 320);
+	if (!lightboxSourceImage) {
+		return;
+	}
+	const rect = lightboxSourceImage.getBoundingClientRect();
+	imageLightboxImage.style.top = `${rect.top}px`;
+	imageLightboxImage.style.left = `${rect.left}px`;
+	imageLightboxImage.style.width = `${rect.width}px`;
+	imageLightboxImage.style.height = `${rect.height}px`;
+	imageLightboxImage.style.borderRadius = "14px";
+	imageLightbox.classList.remove("open");
+	setTimeout(() => {
+		imageLightbox.setAttribute("aria-hidden", "true");
+		imageLightboxImage.src = "";
+		lightboxSourceImage = null;
+	}, 320);
 }
 
+// Version
 async function loadAppVersion() {
-    const {
-        data,
-        error
-    } = await supabaseClient
-        .from("app_settings")
-        .select(
-            "version_major, version_minor"
-        )
-        .eq("id", 1)
-        .single();
-
-    if (error) {
-        console.error(
-            "Verzió betöltési hiba:",
-            error
-        );
-
-        return;
-    }
-
-    const version =
-        `v${data.version_major}.${data.version_minor}`;
-
-    appVersionElements.forEach(
-        (element) => {
-            element.textContent =
-                version;
-        }
-    );
+	const { data, error } = await supabaseClient
+		.from("app_settings")
+		.select("version_major, version_minor")
+		.eq("id", 1)
+		.single();
+	if (error) {
+		console.error("Verzió betöltési hiba:", error);
+		return;
+	}
+	const version = `v${data.version_major}.${data.version_minor}`;
+	appVersionElements.forEach((element) => {
+		element.textContent = version;
+	});
 }
-
 function getCategoryMarkerIcon(place) {
-    const primaryCategory =
-        Array.isArray(place.categories)
-            ? place.categories[0]
-            : "";
-
-    const markerConfig =
-        CATEGORY_MARKER_CONFIG[primaryCategory] ||
-        DEFAULT_MARKER_CONFIG;
-
-    return L.divIcon({
-        className: "category-marker-wrapper",
-
-        html: `
-            <div
-                class="category-marker-pin"
-                style="--marker-color: ${markerConfig.color}"
-            >
-                <span class="category-marker-symbol">
-                    ${markerConfig.symbol}
-                </span>
-            </div>
-        `,
-
-        iconSize: [42, 48],
-        iconAnchor: [21, 46],
-        popupAnchor: [0, -43]
-    });
+	const primaryCategory = Array.isArray(place.categories)
+		? place.categories[0]
+		: "";
+	const markerConfig = CATEGORY_MARKER_CONFIG[primaryCategory] ||
+		DEFAULT_MARKER_CONFIG;
+	return L.divIcon({
+		className: "category-marker-wrapper",
+		html: `
+			<div
+				class="category-marker-pin"
+				style="--marker-color: ${markerConfig.color}"
+			>
+				<span class="category-marker-symbol">
+					${markerConfig.symbol}
+				</span>
+			</div>
+		`,
+		iconSize: [42, 48],
+		iconAnchor: [21, 46],
+		popupAnchor: [0, -43]
+	});
 }
-
 function renderMarkers() {
-    markerLayer.clearLayers();
-    markerByPlaceId.clear();
-
-    const visiblePlaces = getVisiblePlaces();
-
-    visiblePlaces.forEach((place) => {
-        const marker = L.marker(
-    [
-        place.latitude,
-        place.longitude
-    ],
-    {
-        icon:
-            getCategoryMarkerIcon(place),
-
-        title:
-            place.name,
-
-        alt:
-            place.name,
-
-        riseOnHover:
-            true
-    }
-);
-
-        marker.bindPopup(`
-            <strong class="popup-title">${escapeHtml(place.name)}</strong>
-            <span>${escapeHtml(place.address)}</span><br>
-            <button
-                class="popup-button"
-                type="button"
-                onclick="openPlaceDetails(${place.id})"
-            >
-                Adatlap megnyitása
-            </button>
-        `);
-
-        marker.addTo(markerLayer);
-        markerByPlaceId.set(place.id, marker);
-    });
-
-    const currentlyOpenPlaceId = Number(
-        detailsPanel.dataset.placeId || 0
-    );
-
-    if (
-        currentlyOpenPlaceId &&
-        !visiblePlaces.some((place) => place.id === currentlyOpenPlaceId)
-    ) {
-        closePlaceDetails();
-    }
+	markerLayer.clearLayers();
+	markerByPlaceId.clear();
+	const visiblePlaces = getVisiblePlaces();
+	visiblePlaces.forEach((place) => {
+		const marker = L.marker([
+			place.latitude,
+			place.longitude
+		], {
+			icon: getCategoryMarkerIcon(place),
+			title: place.name,
+			alt: place.name,
+			riseOnHover: true
+		});
+		marker.bindPopup(`
+			<strong class="popup-title">${escapeHtml(place.name)}</strong>
+			<span>${escapeHtml(place.address)}</span><br>
+			<button
+				class="popup-button"
+				type="button"
+				onclick="openPlaceDetails(${place.id})"
+			>
+				Adatlap megnyitása
+			</button>
+		`);
+		marker.addTo(markerLayer);
+		markerByPlaceId.set(place.id, marker);
+	});
+	const currentlyOpenPlaceId = Number(detailsPanel.dataset.placeId || 0);
+	if (currentlyOpenPlaceId &&
+		!visiblePlaces.some((place) => place.id === currentlyOpenPlaceId)) {
+		closePlaceDetails();
+	}
 }
 
+// Search
 function renderPlaceSearchResults() {
-    const searchText =
-        placeSearchInput.value
-            .trim()
-            .toLocaleLowerCase("hu");
+	const searchText = placeSearchInput.value
+		.trim()
+		.toLocaleLowerCase("hu");
+	if (searchText.length < 2) {
+		placeSearchResults.innerHTML = "";
+		placeSearchResults.classList.add("hidden");
+		return;
+	}
+	const matchingPlaces = places
+		.filter((place) => place.searchText.includes(searchText))
+		.slice(0, 10);
+	placeSearchResults.classList.remove("hidden");
+	if (matchingPlaces.length === 0) {
+		placeSearchResults.innerHTML = `
+			<div class="map-search-empty">
+				Nincs találat.
+			</div>
+		`;
+		return;
+	}
+	placeSearchResults.innerHTML =
+		matchingPlaces
+			.map((place) => `
+					<button
+						class="map-search-result"
+						type="button"
+						data-search-place-id="${place.id}"
+					>
+						<strong>
+							${escapeHtml(place.name)}
+						</strong>
 
-    if (searchText.length < 2) {
-        placeSearchResults.innerHTML = "";
-
-        placeSearchResults.classList.add(
-            "hidden"
-        );
-
-        return;
-    }
-
-    const matchingPlaces = places
-        .filter((place) => {
-            const searchableText = [
-                place.name,
-                place.address,
-                place.city,
-                ...place.categories
-            ]
-                .join(" ")
-                .toLocaleLowerCase("hu");
-
-            return searchableText.includes(
-                searchText
-            );
-        })
-        .slice(0, 10);
-
-    placeSearchResults.classList.remove(
-        "hidden"
-    );
-
-    if (matchingPlaces.length === 0) {
-        placeSearchResults.innerHTML = `
-            <div class="map-search-empty">
-                Nincs találat.
-            </div>
-        `;
-
-        return;
-    }
-
-    placeSearchResults.innerHTML =
-        matchingPlaces
-            .map(
-                (place) => `
-                    <button
-                        class="map-search-result"
-                        type="button"
-                        data-search-place-id="${place.id}"
-                    >
-                        <strong>
-                            ${escapeHtml(place.name)}
-                        </strong>
-
-                        <span>
-                            ${escapeHtml(place.address)}
-                        </span>
-                    </button>
-                `
-            )
-            .join("");
+						<span>
+							${escapeHtml(place.address)}
+						</span>
+					</button>
+				`)
+			.join("");
 }
 
+// Details
 function resetDetailsDragPosition() {
-    detailsPanel.style.transform = "";
-    detailsPanel.style.transition = "";
-
-    detailsPanel.classList.remove(
-        "dragging"
-    );
-
-    detailsPanel.classList.remove(
-        "drag-ready"
-    );
-
-    detailsDragHintText.textContent =
-        "Húzd fel a részletekhez";
+	detailsPanel.style.transform = "";
+	detailsPanel.style.transition = "";
+	detailsPanel.classList.remove("dragging");
+	detailsPanel.classList.remove("drag-ready");
+	detailsDragHintText.textContent = "Húzd fel a részletekhez";
 }
-
 function setMobileFiltersOpen(isOpen) {
-    filterPanel.classList.toggle(
-        "mobile-open",
-        isOpen
-    );
-
-    mobileFilterToggle.setAttribute(
-        "aria-expanded",
-        String(isOpen)
-    );
-
-    mobileFilterToggle.textContent =
-        isOpen
-            ? "Bezárás"
-            : "Szűrők";
+	filterPanel.classList.toggle("mobile-open", isOpen);
+	mobileFilterToggle.setAttribute("aria-expanded", String(isOpen));
+	mobileFilterToggle.textContent =
+		isOpen
+			? "Bezárás"
+			: "Szűrők";
 }
-
-
 function toggleMobileFilters() {
-    const isCurrentlyOpen =
-        filterPanel.classList.contains(
-            "mobile-open"
-        );
-
-    setMobileFiltersOpen(
-        !isCurrentlyOpen
-    );
+	const isCurrentlyOpen = filterPanel.classList.contains("mobile-open");
+	setMobileFiltersOpen(!isCurrentlyOpen);
 }
-
-
 function closeMobileFilters() {
-    setMobileFiltersOpen(false);
+	setMobileFiltersOpen(false);
 }
-
 function selectPlaceFromSearch(placeId) {
-    const place = places.find(
-        (item) =>
-            Number(item.id) ===
-            Number(placeId)
-    );
-
-    if (!place) {
-        return;
-    }
-
-    clearActiveFilters();
-    renderMarkers();
-
-    placeSearchInput.value = place.name;
-
-    placeSearchResults.innerHTML = "";
-    placeSearchResults.classList.add("hidden");
-
-    const marker =
-        markerByPlaceId.get(place.id);
-
-    if (!marker) {
-        return;
-    }
-
-    markerLayer.zoomToShowLayer(
-        marker,
-        () => {
-            marker.openPopup();
-            openPlaceDetails(place.id);
-        }
-    );
+	const place = places.find((item) => Number(item.id) === Number(placeId));
+	if (!place) {
+		return;
+	}
+	clearActiveFilters();
+	renderMarkers();
+	placeSearchInput.value = place.name;
+	placeSearchResults.innerHTML = "";
+	placeSearchResults.classList.add("hidden");
+	const marker = markerByPlaceId.get(place.id);
+	if (!marker) {
+		return;
+	}
+	markerLayer.zoomToShowLayer(marker, () => {
+		marker.openPopup();
+		openPlaceDetails(place.id);
+	});
 }
-
 function clearActiveFilters() {
-    selectedCategories.clear();
-    selectedPriceLevels.clear();
-
-    document
-        .querySelectorAll(".category-button")
-        .forEach((button) => {
-            button.classList.remove("active");
-        });
-
-    updatePriceFilterVisibility();
+	selectedCategories.clear();
+	selectedPriceLevels.clear();
+	document
+		.querySelectorAll(".category-button")
+		.forEach((button) => {
+			button.classList.remove("active");
+		});
+	updatePriceFilterVisibility();
 }
-
 function openPlaceDetails(placeId) {
-    const place = places.find((item) => item.id === placeId);
+	const place = places.find((item) => item.id === placeId);
+	if (!place) {
+		return;
+	}
+	detailsPanel.dataset.placeId = String(place.id);
+	detailsPanel.classList.add("open");
+	detailsPanel.setAttribute("aria-hidden", "false");
+	if (window.innerWidth <= MOBILE_BREAKPOINT) {
+		detailsBackdrop.classList.add("open");
+		detailsBackdrop.setAttribute("aria-hidden", "false");
+	}
+	const categoryTags = place.categories
+		.map((category) => `<span class="category-tag">${escapeHtml(category)}</span>`)
+		.join("");
+	const foodPlace = isFoodPlace(place);
+	let priceHtml = "";
+	if (foodPlace &&
+		place.priceLevel === "cheap") {
+		priceHtml = `
+				<span class="price-badge cheap">
+					Olcsó
+				</span>
+			`;
+	}
+	if (foodPlace &&
+		place.priceLevel === "expensive") {
+		priceHtml = `
+				<span class="price-badge expensive">
+					Drága
+				</span>
+			`;
+	}
+	detailsContent.innerHTML = `
+		<div class="details-summary">
+			<img
+				class="place-image"
+				src="${escapeHtml(place.image)}"
+				alt="${escapeHtml(place.name)}"
+			>
 
-    if (!place) {
-        return;
-    }
+			<div class="details-summary-text">
+				<h2>${escapeHtml(place.name)}</h2>
 
-    detailsPanel.dataset.placeId = String(place.id);
-    detailsPanel.classList.add("open");
-    detailsPanel.setAttribute("aria-hidden", "false");
+				<div class="category-list">
+					${categoryTags}
+				</div>
 
-    if (window.innerWidth <= 768) {
-        detailsBackdrop.classList.add("open");
+				<div class="place-distance-placeholder">
+					📍 Távolság később
+				</div>
+			</div>
+		</div>
 
-        detailsBackdrop.setAttribute(
-            "aria-hidden",
-            "false"
-        );
-    }
+		<div class="details-full-content">
 
-    const categoryTags = place.categories
-        .map(
-            (category) =>
-                `<span class="category-tag">${escapeHtml(category)}</span>`
-        )
-        .join("");
+			<section class="info-block">
+				<h3>Cím</h3>
+				<p>${escapeHtml(place.address)}</p>
+			</section>
 
-        let priceHtml = "";
+			${priceHtml
+			? `
+						<section class="info-block">
+							<h3>Árkategória</h3>
+							${priceHtml}
+						</section>
+					`
+			: ""}
 
-        if (
-            isFoodPlace(place) &&
-            place.priceLevel === "cheap"
-        ) {
-            priceHtml = `
-                <span class="price-badge cheap">
-                    Olcsó
-                </span>
-            `;
-        }
+			<section class="info-block">
+				<h3>Leírás</h3>
+				<p>${escapeHtml(place.description)}</p>
+			</section>
 
-        if (
-            isFoodPlace(place) &&
-                place.priceLevel === "expensive"
-        ) {
-            priceHtml = `
-                <span class="price-badge expensive">
-                    Drága
-                </span>
-            `;
-        }
+			<section class="info-block">
+				<h3>Jegyinformáció</h3>
+				<p>${escapeHtml(place.ticketInfo)}</p>
+			</section>
 
-    detailsContent.innerHTML = `
-        <div class="details-summary">
-            <img
-                class="place-image"
-                src="${escapeHtml(place.image)}"
-                alt="${escapeHtml(place.name)}"
-            >
+			<section class="info-block">
+				<h3>Nyitvatartás</h3>
+				<p>${escapeHtml(place.openingHours)}</p>
+			</section>
 
-            <div class="details-summary-text">
-                <h2>${escapeHtml(place.name)}</h2>
+			<section class="info-block">
+				<h3>Weboldal</h3>
+				<a
+					class="website-link"
+					href="${escapeHtml(place.website)}"
+					target="_blank"
+					rel="noopener noreferrer"
+				>
+					Hivatalos weboldal megnyitása
+				</a>
+			</section>
 
-                <div class="category-list">
-                    ${categoryTags}
-                </div>
-
-                <div class="place-distance-placeholder">
-                    📍 Távolság később
-                </div>
-            </div>
-        </div>
-
-        <div class="details-full-content">
-
-            <section class="info-block">
-                <h3>Cím</h3>
-                <p>${escapeHtml(place.address)}</p>
-            </section>
-
-            ${
-                priceHtml
-                    ? `
-                        <section class="info-block">
-                            <h3>Árkategória</h3>
-                            ${priceHtml}
-                        </section>
-                    `
-                    : ""
-            }
-
-            <section class="info-block">
-                <h3>Leírás</h3>
-                <p>${escapeHtml(place.description)}</p>
-            </section>
-
-            <section class="info-block">
-                <h3>Jegyinformáció</h3>
-                <p>${escapeHtml(place.ticketInfo)}</p>
-            </section>
-
-            <section class="info-block">
-                <h3>Nyitvatartás</h3>
-                <p>${escapeHtml(place.openingHours)}</p>
-            </section>
-
-            <section class="info-block">
-                <h3>Weboldal</h3>
-                <a
-                    class="website-link"
-                    href="${escapeHtml(place.website)}"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    Hivatalos weboldal megnyitása
-                </a>
-            </section>
-
-        </div>
-    `;
-
-    map.panTo([place.latitude, place.longitude], {
-        animate: true,
-        duration: 0.35
-    });
+		</div>
+	`;
+	map.panTo([place.latitude, place.longitude], {
+		animate: true,
+		duration: 0.35
+	});
 }
-
 function closePlaceDetails() {
-    resetDetailsDragPosition();
-    detailsPanel.classList.remove("open");
-    detailsPanel.classList.remove("expanded");
-
-    detailsPanel.setAttribute(
-        "aria-hidden",
-        "true"
-    );
-
-    detailsBackdrop.classList.remove("open");
-
-    detailsBackdrop.setAttribute(
-        "aria-hidden",
-        "true"
-    );
-
-    detailsPanel.dataset.placeId = "";
+	resetDetailsDragPosition();
+	detailsPanel.classList.remove("open");
+	detailsPanel.classList.remove("expanded");
+	detailsPanel.setAttribute("aria-hidden", "true");
+	detailsBackdrop.classList.remove("open");
+	detailsBackdrop.setAttribute("aria-hidden", "true");
+	detailsPanel.dataset.placeId = "";
 }
-
 function expandPlaceDetails() {
-    resetDetailsDragPosition();
-
-    detailsPanel.classList.add(
-        "expanded"
-    );
-
-    detailsBackdrop.classList.add(
-        "open"
-    );
-
-    detailsBackdrop.setAttribute(
-        "aria-hidden",
-        "false"
-    );
+	resetDetailsDragPosition();
+	detailsPanel.classList.add("expanded");
+	detailsBackdrop.classList.add("open");
+	detailsBackdrop.setAttribute("aria-hidden", "false");
 }
-
 function collapsePlaceDetails() {
-    resetDetailsDragPosition();
-
-    detailsPanel.classList.remove(
-        "expanded"
-    );
-
-    detailsBackdrop.classList.remove(
-        "open"
-    );
-
-    detailsBackdrop.setAttribute(
-        "aria-hidden",
-        "true"
-    );
-
-    detailsPanel.scrollTop = 0;
+	resetDetailsDragPosition();
+	detailsPanel.classList.remove("expanded");
+	detailsBackdrop.classList.remove("open");
+	detailsBackdrop.setAttribute("aria-hidden", "true");
+	detailsPanel.scrollTop = 0;
 }
-
 function resetFilters() {
-    clearActiveFilters();
-    renderMarkers();
+	clearActiveFilters();
+	renderMarkers();
 }
 
+// Events
 closeDetailsButton.addEventListener("click", closePlaceDetails);
 resetFiltersButton.addEventListener("click", resetFilters);
-
-placeSearchInput.addEventListener(
-    "input",
-    renderPlaceSearchResults
-);
-
-placeSearchResults.addEventListener(
-    "click",
-    (event) => {
-        const resultButton =
-            event.target.closest(
-                "[data-search-place-id]"
-            );
-
-        if (!resultButton) {
-            return;
-        }
-
-        const placeId = Number(
-            resultButton.dataset.searchPlaceId
-        );
-
-        selectPlaceFromSearch(placeId);
-    }
-);
-
-mobileFilterToggle.addEventListener(
-    "click",
-    toggleMobileFilters
-);
-
-window.addEventListener(
-    "resize",
-    () => {
-        if (window.innerWidth > 768) {
-            closeMobileFilters();
-
-            detailsBackdrop.classList.remove(
-                "open"
-            );
-
-            detailsBackdrop.setAttribute(
-                "aria-hidden",
-                "true"
-            );
-        }
-    }
-);
-
-detailsDragZone.addEventListener(
-    "pointerdown",
-    (event) => {
-        if (
-            window.innerWidth > 768 ||
-            !detailsPanel.classList.contains(
-                "open"
-            )
-        ) {
-            return;
-        }
-
-        detailsDragging = true;
-
-        detailsDragStartY =
-            event.clientY;
-
-        detailsDragCurrentY =
-            event.clientY;
-
-        detailsDragStartedExpanded =
-            detailsPanel.classList.contains(
-                "expanded"
-            );
-
-        detailsPanel.classList.add(
-            "dragging"
-        );
-
-        detailsDragZone.setPointerCapture(
-            event.pointerId
-        );
-    }
-);
-detailsDragZone.addEventListener(
-    "pointermove",
-    (event) => {
-        if (!detailsDragging) {
-            return;
-        }
-
-        detailsDragCurrentY =
-            event.clientY;
-
-        const deltaY =
-            detailsDragCurrentY -
-            detailsDragStartY;
-
-        let movement = 0;
-
-        if (detailsDragStartedExpanded) {
-            /*
-             * Teljes adatlapnál csak lefelé
-             * engedjük húzni.
-             */
-            movement =
-                Math.max(0, deltaY);
-        } else {
-            if (deltaY < 0) {
-                movement =
-                    Math.max(
-                    -85,
-                    deltaY * 0.72
-                    );
-                } else {
-                    movement =
-                        Math.min(
-                        120,
-                        deltaY
-                    );
-                }
-
-                const readyToExpand =
-                deltaY <= -60;
-
-                detailsPanel.classList.toggle(
-                    "drag-ready",
-                readyToExpand
-                );
-
-                detailsDragHintText.textContent =
-                    readyToExpand
-                    ? "Engedd el a megnyitáshoz"
-                    : "Húzd fel a részletekhez";
-        }   
-
-        detailsPanel.style.transform =
-            `translateY(${movement}px)`;
-    }
-);
-
+placeSearchInput.addEventListener("input", renderPlaceSearchResults);
+placeSearchResults.addEventListener("click", (event) => {
+	const resultButton = event.target.closest("[data-search-place-id]");
+	if (!resultButton) {
+		return;
+	}
+	const placeId = Number(resultButton.dataset.searchPlaceId);
+	selectPlaceFromSearch(placeId);
+});
+mobileFilterToggle.addEventListener("click", toggleMobileFilters);
+window.addEventListener("resize", () => {
+	if (window.innerWidth > MOBILE_BREAKPOINT) {
+		closeMobileFilters();
+		detailsBackdrop.classList.remove("open");
+		detailsBackdrop.setAttribute("aria-hidden", "true");
+	}
+});
+detailsDragZone.addEventListener("pointerdown", (event) => {
+	if (window.innerWidth > MOBILE_BREAKPOINT ||
+		!detailsPanel.classList.contains("open")) {
+		return;
+	}
+	detailsDragging = true;
+	detailsDragStartY = event.clientY;
+	detailsDragCurrentY = event.clientY;
+	detailsDragStartedExpanded = detailsPanel.classList.contains("expanded");
+	detailsPanel.classList.add("dragging");
+	detailsDragZone.setPointerCapture(event.pointerId);
+});
+detailsDragZone.addEventListener("pointermove", (event) => {
+	if (!detailsDragging) {
+		return;
+	}
+	detailsDragCurrentY = event.clientY;
+	const deltaY = detailsDragCurrentY -
+		detailsDragStartY;
+	let movement = 0;
+	if (detailsDragStartedExpanded) {
+		movement = Math.max(0, deltaY);
+	} else {
+		if (deltaY < 0) {
+			movement = Math.max(-85, deltaY * 0.72);
+		} else {
+			movement = Math.min(120, deltaY);
+		}
+		const readyToExpand = deltaY <= -DRAG_EXPAND_THRESHOLD;
+		detailsPanel.classList.toggle("drag-ready", readyToExpand);
+		detailsDragHintText.textContent =
+			readyToExpand
+				? "Engedd el a megnyitáshoz"
+				: "Húzd fel a részletekhez";
+	}
+	detailsPanel.style.transform = `translateY(${movement}px)`;
+});
 function finishDetailsDrag(event) {
-    if (!detailsDragging) {
-        return;
-    }
-
-    detailsDragging = false;
-
-    const deltaY =
-        detailsDragCurrentY -
-        detailsDragStartY;
-
-    detailsPanel.classList.remove(
-        "dragging"
-    );
-
-    detailsPanel.style.transition = "";
-
-    if (
-        detailsDragZone.hasPointerCapture(
-            event.pointerId
-        )
-    ) {
-        detailsDragZone.releasePointerCapture(
-            event.pointerId
-        );
-    }
-
-    /*
-     * Ha csak ráböktél a húzócsíkra.
-     */
-    if (Math.abs(deltaY) < 8) {
-        detailsPanel.style.transform = "";
-
-        if (detailsDragStartedExpanded) {
-            collapsePlaceDetails();
-        } else {
-            expandPlaceDetails();
-        }
-
-        return;
-    }
-
-    /*
-     * TELJES ADATLAP
-     * lefelé húzva visszamegy kicsibe.
-     */
-    if (detailsDragStartedExpanded) {
-        if (deltaY > 65) {
-            collapsePlaceDetails();
-        } else {
-            resetDetailsDragPosition();
-        }
-
-        return;
-    }
-
-    /*
-     * KIS KÁRTYA
-     * felfelé -> teljes adatlap
-     */
-    if (deltaY < -60) {
-        expandPlaceDetails();
-        return;
-    }
-
-    /*
-     * KIS KÁRTYA
-     * lefelé -> bezárás
-     */
-    if (deltaY > 65) {
-        closePlaceDetails();
-        return;
-    }
-
-    /*
-     * Nem húztad el eléggé:
-     * visszapattan az eredeti helyére.
-     */
-    resetDetailsDragPosition();
+	if (!detailsDragging) {
+		return;
+	}
+	detailsDragging = false;
+	const deltaY = detailsDragCurrentY -
+		detailsDragStartY;
+	detailsPanel.classList.remove("dragging");
+	detailsPanel.style.transition = "";
+	if (detailsDragZone.hasPointerCapture(event.pointerId)) {
+		detailsDragZone.releasePointerCapture(event.pointerId);
+	}
+	if (Math.abs(deltaY) < DRAG_TAP_THRESHOLD) {
+		detailsPanel.style.transform = "";
+		if (detailsDragStartedExpanded) {
+			collapsePlaceDetails();
+		} else {
+			expandPlaceDetails();
+		}
+		return;
+	}
+	if (detailsDragStartedExpanded) {
+		if (deltaY > DRAG_COLLAPSE_THRESHOLD) {
+			collapsePlaceDetails();
+		} else {
+			resetDetailsDragPosition();
+		}
+		return;
+	}
+	if (deltaY < -DRAG_EXPAND_THRESHOLD) {
+		expandPlaceDetails();
+		return;
+	}
+	if (deltaY > DRAG_COLLAPSE_THRESHOLD) {
+		closePlaceDetails();
+		return;
+	}
+	resetDetailsDragPosition();
 }
-
-detailsDragZone.addEventListener(
-    "pointerup",
-    finishDetailsDrag
-);
-
-detailsDragZone.addEventListener(
-    "pointercancel",
-    finishDetailsDrag
-);
-
-detailsContent.addEventListener(
-    "click",
-    (event) => {
-        const clickedImage =
-            event.target.closest(".place-image");
-
-        if (!clickedImage) {
-            return;
-        }
-
-        openImageLightbox(clickedImage);
-    }
-);
-
-imageLightboxClose.addEventListener(
-    "click",
-    (event) => {
-        event.stopPropagation();
-        closeImageLightbox();
-    }
-);
-
-imageLightbox.addEventListener(
-    "click",
-    (event) => {
-        if (
-            event.target === imageLightbox
-        ) {
-            closeImageLightbox();
-        }
-    }
-);
-
-mobileFilterButton.addEventListener(
-    "click",
-    toggleMobileFilters
-);
-
-mobileSearchButton.addEventListener(
-    "click",
-    () => {
-        setMobileFiltersOpen(true);
-
-        setTimeout(() => {
-            placeSearchInput.focus();
-        }, 100);
-    }
-);
-
-detailsBackdrop.addEventListener(
-    "click",
-    () => {
-        if (
-            window.innerWidth <= 768 &&
-            detailsPanel.classList.contains(
-                "expanded"
-            )
-        ) {
-            collapsePlaceDetails();
-            return;
-        }
-
-        closePlaceDetails();
-    }
-);
-
-document.addEventListener(
-    "keydown",
-    (event) => {
-        if (event.key !== "Escape") {
-            return;
-        }
-
-        if (
-            imageLightbox.classList.contains(
-                "open"
-            )
-        ) {
-            closeImageLightbox();
-            return;
-        }
-
-        if (
-            detailsPanel.classList.contains(
-                "open"
-            )
-        ) {
-            closePlaceDetails();
-        }
-    }
-);
-
-document.addEventListener(
-    "click",
-    (event) => {
-        const clickedInsideSearch =
-            event.target.closest(".map-search");
-
-        if (!clickedInsideSearch) {
-            placeSearchResults.classList.add(
-                "hidden"
-            );
-        }
-    }
-);
-
+detailsDragZone.addEventListener("pointerup", finishDetailsDrag);
+detailsDragZone.addEventListener("pointercancel", finishDetailsDrag);
+detailsContent.addEventListener("click", (event) => {
+	const clickedImage = event.target.closest(".place-image");
+	if (!clickedImage) {
+		return;
+	}
+	openImageLightbox(clickedImage);
+});
+imageLightboxClose.addEventListener("click", (event) => {
+	event.stopPropagation();
+	closeImageLightbox();
+});
+imageLightbox.addEventListener("click", (event) => {
+	if (event.target === imageLightbox) {
+		closeImageLightbox();
+	}
+});
+mobileFilterButton.addEventListener("click", toggleMobileFilters);
+mobileSearchButton.addEventListener("click", () => {
+	setMobileFiltersOpen(true);
+	setTimeout(() => {
+		placeSearchInput.focus();
+	}, 100);
+});
+detailsBackdrop.addEventListener("click", () => {
+	if (window.innerWidth <= MOBILE_BREAKPOINT &&
+		detailsPanel.classList.contains("expanded")) {
+		collapsePlaceDetails();
+		return;
+	}
+	closePlaceDetails();
+});
+document.addEventListener("keydown", (event) => {
+	if (event.key !== "Escape") {
+		return;
+	}
+	if (imageLightbox.classList.contains("open")) {
+		closeImageLightbox();
+		return;
+	}
+	if (detailsPanel.classList.contains("open")) {
+		closePlaceDetails();
+	}
+});
+document.addEventListener("click", (event) => {
+	const clickedInsideSearch = event.target.closest(".map-search");
+	if (!clickedInsideSearch) {
+		placeSearchResults.classList.add("hidden");
+	}
+});
 map.on("click", () => {
-    map.closePopup();
+	map.closePopup();
+});
+map.getContainer().addEventListener("pointerdown", (event) => {
+	if (window.innerWidth > MOBILE_BREAKPOINT) {
+		return;
+	}
+	if (!(event.target instanceof Element)) {
+		return;
+	}
+	const clickedInteractiveElement = event.target.closest(`
+					.leaflet-marker-icon,
+					.marker-cluster,
+					.leaflet-control,
+					.leaflet-popup
+				`);
+	if (!clickedInteractiveElement) {
+		closeMobileFilters();
+	}
+}, {
+	passive: true
 });
 
-map.getContainer().addEventListener(
-        "pointerdown",
-        (event) => {
-            if (window.innerWidth > 768) {
-                return;
-            }
-
-            if (!(event.target instanceof Element)) {
-                return;
-            }
-
-            const clickedInteractiveElement =
-                event.target.closest(`
-                    .leaflet-marker-icon,
-                    .marker-cluster,
-                    .leaflet-control,
-                    .leaflet-popup
-                `);
-
-            if (!clickedInteractiveElement) {
-                closeMobileFilters();
-            }
-        },
-        {
-            passive: true
-        }
-    );
-
+// Init
 window.openPlaceDetails = openPlaceDetails;
-
 initializePriceFilters();
 updatePriceFilterVisibility();
 loadAppVersion();
