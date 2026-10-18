@@ -36,6 +36,7 @@
 				<p id="userEmail" class="user-email"></p>
 				<div class="admin-tabs">
 					<button id="placesTabButton" class="admin-tab active" type="button">Helyek</button>
+					<button id="eventsTabButton" class="admin-tab" type="button">Események</button>
 					<button id="notificationsTabButton" class="admin-tab" type="button">Értesítések</button>
 				</div>
 				<!-- Places -->
@@ -183,6 +184,101 @@
 						<div id="placesList" class="places-list"></div>
 					</section>
 				</div>
+				<!-- Events -->
+				<div id="eventsAdminView" class="events-admin-view hidden">
+					<form id="eventForm" class="event-form">
+						<div id="eventEditModeBanner" class="edit-mode-banner full-width hidden">
+							<strong>Szerkesztési mód</strong>
+							<span id="eventEditModeTitle"></span>
+						</div>
+
+						<div class="form-group full-width">
+							<label for="eventTitle">Esemény neve *</label>
+							<input id="eventTitle" name="title" type="text" required>
+						</div>
+
+						<div class="form-group">
+							<label for="eventRecurrenceType">Ismétlődés *</label>
+							<select id="eventRecurrenceType" name="recurrenceType" required>
+								<option value="none">Egyszeri</option>
+								<option value="yearly">Évente ismétlődő</option>
+								<option value="monthly">Havonta ismétlődő</option>
+							</select>
+						</div>
+
+						<div class="form-group">
+							<label id="eventStartDateLabel" for="eventStartDate">Kezdő dátum *</label>
+							<input id="eventStartDate" name="startDate" type="date" required>
+							<p id="eventRecurrenceHint" class="field-hint">Egyszeri eseménynél ez a tényleges kezdő dátum.</p>
+						</div>
+
+						<div id="eventEndDateGroup" class="form-group">
+							<label for="eventEndDate">Záró dátum</label>
+							<input id="eventEndDate" name="endDate" type="date">
+							<p class="field-hint">Többnapos eseménynél töltsd ki.</p>
+						</div>
+
+						<div class="form-group">
+							<label for="eventStartTime">Kezdés</label>
+							<input id="eventStartTime" name="startTime" type="time">
+						</div>
+
+						<div class="form-group">
+							<label for="eventEndTime">Befejezés</label>
+							<input id="eventEndTime" name="endTime" type="time">
+						</div>
+
+						<div class="form-group full-width">
+							<label for="eventPlaceId">Kapcsolt térképes hely</label>
+							<select id="eventPlaceId" name="placeId">
+								<option value="">Nincs kapcsolt hely</option>
+							</select>
+							<p class="field-hint">Ha kiválasztasz egy helyet, a publikus eseménykártyáról rá lehet ugrani a térképen.</p>
+						</div>
+
+						<div class="form-group full-width">
+							<label for="eventWebsite">Esemény weboldala</label>
+							<input id="eventWebsite" name="website" type="url" placeholder="https://...">
+						</div>
+
+						<div class="form-group full-width">
+							<label for="eventDescription">Leírás</label>
+							<textarea id="eventDescription" name="description" rows="6"></textarea>
+						</div>
+
+						<label class="checkbox-row full-width">
+							<input id="eventIsPublished" name="isPublished" type="checkbox" checked>
+							<span>Jelenjen meg a publikus havi eseményajánlóban</span>
+						</label>
+
+						<div class="form-actions full-width">
+							<button id="saveEventButton" type="submit">Esemény mentése</button>
+							<button id="cancelEventEditButton" class="secondary-button hidden" type="button">Szerkesztés megszakítása</button>
+							<button id="clearEventFormButton" class="secondary-button" type="button">Űrlap törlése</button>
+						</div>
+
+						<p id="eventSaveMessage" class="message full-width" aria-live="polite"></p>
+					</form>
+
+					<section class="events-manager">
+						<div class="places-manager-header">
+							<div>
+								<h2>Mentett események</h2>
+								<p id="eventsCount" class="places-count">Események betöltése...</p>
+							</div>
+							<button id="refreshEventsButton" class="secondary-button" type="button">Lista frissítése</button>
+						</div>
+
+						<div class="places-search">
+							<label for="eventsSearchInput">Keresés az események között</label>
+							<input id="eventsSearchInput" type="search" placeholder="Név, helyszín vagy leírás..." autocomplete="off">
+						</div>
+
+						<p id="eventsListMessage" class="message" aria-live="polite"></p>
+						<div id="eventsList" class="events-admin-list"></div>
+					</section>
+				</div>
+
 				<!-- Notifications -->
 				<section id="notificationsAdminView" class="notifications-view hidden">
 					<section class="notification-editor-panel">

@@ -1059,3 +1059,158 @@ input[type="file"]::file-selector-button {
 		height: 700px;
 	}
 }
+
+/* Events */
+
+.events-admin-view {
+	display: grid;
+	grid-template-columns: minmax(620px, 1.2fr) minmax(420px, 0.8fr);
+	flex: 1;
+	gap: 20px;
+	min-height: 0;
+	overflow: hidden;
+}
+
+.events-admin-view.hidden {
+	display: none;
+}
+
+.event-form {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	align-content: start;
+	gap: 18px;
+	min-height: 0;
+	margin: 0;
+	padding: 18px;
+	border: 1px solid #263447;
+	border-radius: 16px;
+	background: #0d141d;
+	overflow-x: hidden;
+	overflow-y: auto;
+	scrollbar-gutter: stable;
+}
+
+#saveEventButton {
+	background: #2563eb;
+	color: #ffffff;
+	font-weight: 700;
+}
+
+#saveEventButton:hover {
+	background: #1d4ed8;
+}
+
+#saveEventButton:disabled {
+	cursor: wait;
+	opacity: 0.6;
+}
+
+.events-manager {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	margin: 0;
+	padding: 18px;
+	border: 1px solid #263447;
+	border-radius: 16px;
+	background: #0d141d;
+	overflow: hidden;
+}
+
+.events-manager h2 {
+	margin: 0;
+	color: #f4f7fb;
+	font-size: 22px;
+}
+
+#eventsListMessage {
+	flex: 0 0 auto;
+	min-height: 24px;
+	margin: 0 0 8px;
+}
+
+.events-admin-list {
+	display: grid;
+	grid-auto-rows: max-content;
+	flex: 1;
+	gap: 8px;
+	min-height: 0;
+	padding-right: 6px;
+	overflow-x: hidden;
+	overflow-y: auto;
+	scrollbar-gutter: stable;
+}
+
+.event-admin-item {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 12px;
+	padding: 11px;
+	border: 1px solid #29394d;
+	border-radius: 12px;
+	background: #131d28;
+}
+
+.event-admin-content {
+	min-width: 0;
+}
+
+.event-admin-heading {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+}
+
+.event-admin-heading h3 {
+	min-width: 0;
+	margin: 0;
+	overflow: hidden;
+	color: #edf3fb;
+	font-size: 15px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.event-admin-date,
+.event-admin-place {
+	margin: 4px 0 0;
+	color: #94a3b8;
+	font-size: 12px;
+}
+
+.event-admin-place {
+	color: #7fb4fb;
+}
+
+@media (max-width: 1150px) {
+	.events-admin-view {
+		grid-template-columns: 1fr;
+		overflow: visible;
+	}
+
+	.event-form {
+		overflow: visible;
+	}
+
+	.events-manager {
+		height: 700px;
+	}
+}
+
+@media (max-width: 720px) {
+	.event-form {
+		grid-template-columns: 1fr;
+	}
+
+	.event-admin-item {
+		grid-template-columns: 1fr;
+	}
+
+	.event-admin-heading {
+		align-items: flex-start;
+		flex-direction: column;
+	}
+}

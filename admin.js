@@ -40,6 +40,35 @@ const openingHoursInput = document.getElementById("openingHours");
 const categoryOneInput = document.getElementById("categoryOne");
 const categoryTwoInput = document.getElementById("categoryTwo");
 
+// Events
+const eventsAdminView = document.getElementById("eventsAdminView");
+const eventsTabButton = document.getElementById("eventsTabButton");
+const eventForm = document.getElementById("eventForm");
+const eventTitleInput = document.getElementById("eventTitle");
+const eventRecurrenceType = document.getElementById("eventRecurrenceType");
+const eventStartDate = document.getElementById("eventStartDate");
+const eventStartDateLabel = document.getElementById("eventStartDateLabel");
+const eventRecurrenceHint = document.getElementById("eventRecurrenceHint");
+const eventEndDateGroup = document.getElementById("eventEndDateGroup");
+const eventEndDate = document.getElementById("eventEndDate");
+const eventStartTime = document.getElementById("eventStartTime");
+const eventEndTime = document.getElementById("eventEndTime");
+const eventPlaceId = document.getElementById("eventPlaceId");
+const eventWebsite = document.getElementById("eventWebsite");
+const eventDescription = document.getElementById("eventDescription");
+const eventIsPublished = document.getElementById("eventIsPublished");
+const saveEventButton = document.getElementById("saveEventButton");
+const clearEventFormButton = document.getElementById("clearEventFormButton");
+const cancelEventEditButton = document.getElementById("cancelEventEditButton");
+const eventEditModeBanner = document.getElementById("eventEditModeBanner");
+const eventEditModeTitle = document.getElementById("eventEditModeTitle");
+const eventSaveMessage = document.getElementById("eventSaveMessage");
+const eventsList = document.getElementById("eventsList");
+const eventsCount = document.getElementById("eventsCount");
+const eventsSearchInput = document.getElementById("eventsSearchInput");
+const eventsListMessage = document.getElementById("eventsListMessage");
+const refreshEventsButton = document.getElementById("refreshEventsButton");
+
 // Images
 const imageFileInput = document.getElementById("imageFile");
 const imagePreviewContainer = document.getElementById("imagePreviewContainer");
@@ -84,6 +113,8 @@ let editingPlaceId = null;
 let editingOriginalStoragePath = null;
 let editingOriginalImageUrl = "";
 let removeExistingImageOnSave = false;
+let adminEvents = [];
+let editingEventId = null;
 
 // Places
 async function loadAdminPlaces() {
@@ -132,6 +163,7 @@ async function loadAdminPlaces() {
 	}));
 	placesListMessage.textContent = "";
 	placesListMessage.className = "message";
+	updateEventPlaceOptions();
 	renderAdminPlaces();
 }
 function renderAdminPlaces() {
@@ -535,13 +567,339 @@ function escapeHtml(value) {
 		.replaceAll("'", "&#039;");
 }
 
+// Events
+function updateEventPlaceOptions() {
+	if (!eventPlaceId) {
+		return;
+	}
+
+	const selectedValue = eventPlaceId.value;
+	const options = adminPlaces
+		.map((place) => `<option value="${place.id}">${escapeHtml(place.name)}${place.city ? ` – ${escapeHtml(place.city)}` : ""}</option>`)
+		.join("");
+
+	eventPlaceId.innerHTML = `<option value="">Nincs kapcsolt hely</option>${options}`;
+	if ([...eventPlaceId.options].some((option) => option.value === selectedValue)) {
+		eventPlaceId.value = selectedValue;
+	}
+
+	if (adminEvents.length > 0) {
+		adminEvents.forEach((event) => {
+			event.searchText = [
+				event.title,
+				event.description,
+				getAdminEventPlaceName(event.place_id)
+			].join(" ").toLocaleLowerCase("hu");
+		});
+		renderAdminEvents();
+	}
+}
+
+function updateEventRecurrenceFields() {
+	const recurrence = eventRecurrenceType.value;
+	const recurring = recurrence !== "none";
+
+	eventEndDateGroup.classList.toggle("hidden", recurring);
+	if (recurring) {
+		eventEndDate.value = "";
+	}
+
+	if (recurrence === "yearly") {
+		eventStartDateLabel.textContent = "Minta dátum *";
+		eventRecurrenceHint.textContent = "A hónapot és a napot használjuk, az esemény minden évben ekkor jelenik meg.";
+		return;
+	}
+
+	if (recurrence === "monthly") {
+		eventStartDateLabel.textContent = "Minta dátum *";
+		eventRecurrenceHint.textContent = "A napot használjuk, az esemény minden hónapban ezen a napon jelenik meg.";
+		return;
+	}
+
+	eventStartDateLabel.textContent = "Kezdő dátum *";
+	eventRecurrenceHint.textContent = "Egyszeri eseménynél ez a tényleges kezdő dátum.";
+}
+
+function getAdminEventPlaceName(placeId) {
+	return adminPlaces.find((place) => Number(place.id) === Number(placeId))?.name || "Nincs kapcsolt hely";
+}
+
+function getAdminRecurrenceLabel(recurrenceType) {
+	if (recurrenceType === "yearly") {
+		return "Évente";
+	}
+	if (recurrenceType === "monthly") {
+		return "Havonta";
+	}
+	return "Egyszeri";
+}
+
+function formatAdminEventDate(event) {
+	const date = event.start_date
+		? new Intl.DateTimeFormat("hu-HU", { year: "numeric", month: "short", day: "numeric" }).format(new Date(`${event.start_date}T12:00:00`))
+		: "Nincs dátum";
+	const startTime = event.start_time ? String(event.start_time).slice(0, 5) : "";
+
+	return `${date}${startTime ? ` · ${startTime}` : ""}`;
+}
+
+async function loadAdminEvents() {
+	eventsListMessage.textContent = "Események betöltése...";
+	eventsListMessage.className = "message";
+	refreshEventsButton.disabled = true;
+
+	const { data, error } = await supabaseClient
+		.from("events")
+		.select(`
+			id,
+			title,
+			description,
+			start_date,
+			end_date,
+			start_time,
+			end_time,
+			recurrence_type,
+			place_id,
+			website,
+			is_published,
+			created_at,
+			updated_at
+		`)
+		.order("start_date", { ascending: true })
+		.order("title", { ascending: true });
+
+	refreshEventsButton.disabled = false;
+
+	if (error) {
+		console.error("Eseménylista betöltési hiba:", error);
+		eventsListMessage.textContent = "Nem sikerült betölteni az eseményeket. Ha még nem hoztad létre az events táblát, futtasd a supabase-events.sql fájlt.";
+		eventsListMessage.className = "message error";
+		adminEvents = [];
+		renderAdminEvents();
+		return;
+	}
+
+	adminEvents = (data || []).map((event) => ({
+		...event,
+		searchText: [
+			event.title,
+			event.description,
+			getAdminEventPlaceName(event.place_id)
+		].join(" ").toLocaleLowerCase("hu")
+	}));
+
+	eventsListMessage.textContent = "";
+	eventsListMessage.className = "message";
+	renderAdminEvents();
+}
+
+function renderAdminEvents() {
+	const searchText = eventsSearchInput.value.trim().toLocaleLowerCase("hu");
+	const filteredEvents = adminEvents.filter((event) => !searchText || event.searchText.includes(searchText));
+
+	eventsCount.textContent = searchText
+		? `${filteredEvents.length} találat, összesen ${adminEvents.length} esemény`
+		: `${adminEvents.length} mentett esemény`;
+
+	if (filteredEvents.length === 0) {
+		eventsList.innerHTML = `
+			<div class="empty-list">
+				${searchText ? "Nincs a keresésnek megfelelő esemény." : "Még nincs mentett esemény."}
+			</div>
+		`;
+		return;
+	}
+
+	eventsList.innerHTML = filteredEvents
+		.map((event) => {
+			const statusClass = event.is_published ? "published" : "draft";
+			const statusText = event.is_published ? "Közzétéve" : "Piszkozat";
+			const placeName = getAdminEventPlaceName(event.place_id);
+
+			return `
+				<article class="event-admin-item">
+					<div class="event-admin-content">
+						<div class="event-admin-heading">
+							<h3>${escapeHtml(event.title)}</h3>
+							<span class="place-status ${statusClass}">${statusText}</span>
+						</div>
+						<p class="event-admin-date">${escapeHtml(formatAdminEventDate(event))} · ${getAdminRecurrenceLabel(event.recurrence_type)}</p>
+						<p class="event-admin-place">${escapeHtml(placeName)}</p>
+					</div>
+					<div class="place-list-actions">
+						<button class="edit-place-button" type="button" data-edit-event-id="${event.id}">Szerkesztés</button>
+						<button class="delete-place-button" type="button" data-delete-event-id="${event.id}" data-event-title="${escapeHtml(event.title)}">Törlés</button>
+					</div>
+				</article>
+			`;
+		})
+		.join("");
+}
+
+function resetEventForm() {
+	eventForm.reset();
+	editingEventId = null;
+	eventIsPublished.checked = true;
+	eventRecurrenceType.value = "none";
+	saveEventButton.textContent = "Esemény mentése";
+	cancelEventEditButton.classList.add("hidden");
+	eventEditModeBanner.classList.add("hidden");
+	eventEditModeTitle.textContent = "";
+	eventSaveMessage.textContent = "";
+	eventSaveMessage.className = "message full-width";
+	updateEventRecurrenceFields();
+}
+
+function startEditingEvent(eventId) {
+	const event = adminEvents.find((item) => Number(item.id) === Number(eventId));
+	if (!event) {
+		return;
+	}
+
+	editingEventId = Number(event.id);
+	eventTitleInput.value = event.title || "";
+	eventRecurrenceType.value = event.recurrence_type || "none";
+	eventStartDate.value = event.start_date || "";
+	eventEndDate.value = event.end_date || "";
+	eventStartTime.value = event.start_time ? String(event.start_time).slice(0, 5) : "";
+	eventEndTime.value = event.end_time ? String(event.end_time).slice(0, 5) : "";
+	eventPlaceId.value = event.place_id ? String(event.place_id) : "";
+	eventWebsite.value = event.website || "";
+	eventDescription.value = event.description || "";
+	eventIsPublished.checked = Boolean(event.is_published);
+	saveEventButton.textContent = "Módosítások mentése";
+	cancelEventEditButton.classList.remove("hidden");
+	eventEditModeBanner.classList.remove("hidden");
+	eventEditModeTitle.textContent = `– ${event.title}`;
+	updateEventRecurrenceFields();
+
+	eventForm.scrollTo({ top: 0, behavior: "smooth" });
+	setTimeout(() => eventTitleInput.focus({ preventScroll: true }), 250);
+}
+
+async function deleteEvent(eventId, eventTitle) {
+	const confirmed = window.confirm(`Biztosan törlöd ezt az eseményt?\n\n${eventTitle}`);
+	if (!confirmed) {
+		return;
+	}
+
+	const { error } = await supabaseClient
+		.from("events")
+		.delete()
+		.eq("id", eventId);
+
+	if (error) {
+		console.error("Eseménytörlési hiba:", error);
+		eventsListMessage.textContent = `Nem sikerült törölni: ${error.message}`;
+		eventsListMessage.className = "message error";
+		return;
+	}
+
+	if (Number(editingEventId) === Number(eventId)) {
+		resetEventForm();
+	}
+
+	eventsListMessage.textContent = `Törölve: ${eventTitle}`;
+	eventsListMessage.className = "message success";
+	await loadAdminEvents();
+}
+
+async function saveEvent(event) {
+	event.preventDefault();
+	eventSaveMessage.textContent = "";
+
+	const { data: userData, error: userError } = await supabaseClient.auth.getUser();
+	if (userError || !userData?.user || userData.user.id !== ADMIN_USER_ID) {
+		eventSaveMessage.textContent = "A mentéshez adminisztrátorként kell bejelentkezned.";
+		eventSaveMessage.className = "message error full-width";
+		return;
+	}
+
+	const formData = new FormData(eventForm);
+	const title = String(formData.get("title") || "").trim();
+	const recurrenceType = String(formData.get("recurrenceType") || "none");
+	const startDate = String(formData.get("startDate") || "");
+	const endDate = recurrenceType === "none" ? String(formData.get("endDate") || "") : "";
+	const startTime = String(formData.get("startTime") || "");
+	const endTime = String(formData.get("endTime") || "");
+	const placeId = String(formData.get("placeId") || "");
+	const website = String(formData.get("website") || "").trim();
+	const description = String(formData.get("description") || "").trim();
+	const isPublished = formData.get("isPublished") === "on";
+
+	if (!title || !startDate) {
+		eventSaveMessage.textContent = "Az esemény nevét és dátumát kötelező megadni.";
+		eventSaveMessage.className = "message error full-width";
+		return;
+	}
+
+	if (endDate && endDate < startDate) {
+		eventSaveMessage.textContent = "A záró dátum nem lehet korábbi a kezdő dátumnál.";
+		eventSaveMessage.className = "message error full-width";
+		return;
+	}
+
+	const eventToSave = {
+		title,
+		description: description || null,
+		start_date: startDate,
+		end_date: endDate || null,
+		start_time: startTime || null,
+		end_time: endTime || null,
+		recurrence_type: recurrenceType,
+		place_id: placeId ? Number(placeId) : null,
+		website: website || null,
+		is_published: isPublished,
+		updated_at: new Date().toISOString()
+	};
+
+	const isEditing = editingEventId !== null;
+	saveEventButton.disabled = true;
+	saveEventButton.textContent = isEditing ? "Módosítások mentése..." : "Mentés...";
+
+	const result = isEditing
+		? await supabaseClient.from("events").update(eventToSave).eq("id", editingEventId).select("id, title")
+		: await supabaseClient.from("events").insert(eventToSave).select("id, title");
+
+	saveEventButton.disabled = false;
+	saveEventButton.textContent = isEditing ? "Módosítások mentése" : "Esemény mentése";
+
+	if (result.error) {
+		console.error("Eseménymentési hiba:", result.error);
+		eventSaveMessage.textContent = `Nem sikerült elmenteni: ${result.error.message}`;
+		eventSaveMessage.className = "message error full-width";
+		return;
+	}
+
+	const savedTitle = result.data?.[0]?.title || title;
+	resetEventForm();
+	eventSaveMessage.textContent = isEditing
+		? `Sikeresen módosítva: ${savedTitle}`
+		: `Sikeresen elmentve: ${savedTitle}`;
+	eventSaveMessage.className = "message success full-width";
+	await loadAdminEvents();
+}
+
 // Notifications
 function switchAdminView(view) {
+	const showPlaces = view === "places";
+	const showEvents = view === "events";
 	const showNotifications = view === "notifications";
-	placesAdminView.classList.toggle("hidden", showNotifications);
+
+	placesAdminView.classList.toggle("hidden", !showPlaces);
+	eventsAdminView.classList.toggle("hidden", !showEvents);
 	notificationsAdminView.classList.toggle("hidden", !showNotifications);
-	placesTabButton.classList.toggle("active", !showNotifications);
+
+	placesTabButton.classList.toggle("active", showPlaces);
+	eventsTabButton.classList.toggle("active", showEvents);
 	notificationsTabButton.classList.toggle("active", showNotifications);
+
+	if (showEvents) {
+		updateEventPlaceOptions();
+		updateEventRecurrenceFields();
+		loadAdminEvents();
+	}
+
 	if (showNotifications) {
 		initializeReleaseEditor();
 		loadReleaseVersion();
@@ -1319,9 +1677,42 @@ logoutButton.addEventListener("click", async () => {
 placesTabButton.addEventListener("click", () => {
 	switchAdminView("places");
 });
+eventsTabButton.addEventListener("click", () => {
+	switchAdminView("events");
+});
 notificationsTabButton.addEventListener("click", () => {
 	switchAdminView("notifications");
 });
+eventForm.addEventListener("submit", saveEvent);
+eventRecurrenceType.addEventListener("change", updateEventRecurrenceFields);
+eventsSearchInput.addEventListener("input", renderAdminEvents);
+refreshEventsButton.addEventListener("click", loadAdminEvents);
+clearEventFormButton.addEventListener("click", () => {
+	resetEventForm();
+	eventTitleInput.focus();
+});
+cancelEventEditButton.addEventListener("click", () => {
+	resetEventForm();
+	eventSaveMessage.textContent = "A szerkesztés megszakítva.";
+	eventSaveMessage.className = "message full-width";
+	eventTitleInput.focus();
+});
+eventsList.addEventListener("click", async (event) => {
+	const editButton = event.target.closest("[data-edit-event-id]");
+	if (editButton) {
+		startEditingEvent(Number(editButton.dataset.editEventId));
+		return;
+	}
+
+	const deleteButton = event.target.closest("[data-delete-event-id]");
+	if (deleteButton) {
+		await deleteEvent(
+			Number(deleteButton.dataset.deleteEventId),
+			deleteButton.dataset.eventTitle || "Esemény"
+		);
+	}
+});
+
 releaseSubject.addEventListener("input", updateReleasePreview);
 desktopPreviewButton.addEventListener("click", () => {
 	releasePreviewShell.classList.remove("mobile-preview");

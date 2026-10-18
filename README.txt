@@ -1,33 +1,42 @@
 VASTI MAP
+=========
 
-INDÍTÁS
-1. Nyisd meg a projektet VS Code-ban.
-2. Indítsd el Live Serverrel az index.html fájlt.
-3. Az adminfelület az admin.html oldalon érhető el.
-4. Internetkapcsolat szükséges a Leaflet, Supabase és Quill betöltéséhez.
+Publikus térkép:
+- index.html
+- style.css
+- script.js
 
-FŐ FÁJLOK
-- index.html      Nyilvános térkép
-- style.css       Nyilvános felület stílusai
-- script.js       Térkép, szűrés, keresés és mobil adatlap
-- admin.html      Adminfelület
-- admin.css       Adminfelület stílusai
-- admin.js        Helykezelés és verzióértesítések
-- config.js       Supabase kliens beállítása
-- assets/         Helyi grafikai elemek
+Admin:
+- admin.html
+- admin.css
+- admin.js
 
-FUNKCIÓK
-- Supabase-alapú helyadatbázis
-- kategória- és ár szerinti szűrés
-- keresés és marker clustering
-- reszponzív mobil/asztali felület
-- adminos helyfelvétel, szerkesztés és törlés
-- cím alapú koordinátakeresés
-- képfeltöltés Supabase Storage-ba
-- verzióértesítő email szerkesztő és előnézet
-- címzettkezelés és próbaküldés
-- automatikus verzióléptetés
+Beállítás:
+- config.js tartalmazza a Supabase kliens publikus konfigurációját.
+- Az eseményrendszer első használata előtt futtasd a Supabase SQL Editorban a supabase-events.sql fájlt.
 
-MEGJEGYZÉS
-A publikus Supabase kulcs kliensoldali használatra szolgál. Az admin műveleteket
-Supabase Auth, RLS szabályok és szerveroldali funkciók védik.
+Fő publikus funkciók:
+- modern kategória-markerek és cluster jelölők
+- keresés és kategória/ár szűrés
+- mobil seamless oldalsó menü
+- mobil és desktop lista nézet
+- havi eseményajánló
+- eseményhez kapcsolt hely ideiglenes térképes kiemelése
+- mobil portrait bottom sheet
+- külön mobil landscape elrendezés
+- desktop oldalsó adatlap
+- képnagyító lightbox
+- automatikus verziószám
+
+Esemény ismétlődés:
+- Egyszeri: a kezdő és opcionális záró dátum tényleges dátum.
+- Évente: a minta dátum hónapja és napja ismétlődik évente.
+- Havonta: a minta dátum napja ismétlődik minden hónapban.
+
+Későbbre hagyott funkciók:
+- útvonaltervező
+- valódi távolság
+- kedvencek / meglátogatott helyek
+- közvetlen helylinkek
+- közeli helyek
+- random „Hova menjünk?” funkció

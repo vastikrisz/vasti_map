@@ -2,7 +2,7 @@
 <html lang="hu">
 	<head>
 		<meta charset="UTF-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 		<title>Vasti térképe</title>
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
@@ -11,12 +11,16 @@
 	</head>
 	<body>
 		<main class="app">
+			<!-- Backdrop -->
+			<div id="uiBackdrop" class="ui-backdrop" aria-hidden="true"></div>
+
 			<!-- Mobile -->
-			<div class="mobile-topbar">
+			<header class="mobile-topbar">
 				<div class="mobile-brand">
-					Vasti "Hova a picsába menjünk?" térképe
+					<span>Vasti „Hova a picsába menjünk?” térképe</span>
 					<span class="app-version">v1.1</span>
 				</div>
+
 				<div class="mobile-topbar-actions">
 					<button id="mobileSearchButton" class="mobile-icon-button" type="button" aria-label="Keresés">
 						<svg viewBox="0 0 24 24" aria-hidden="true" class="mobile-icon">
@@ -24,46 +28,165 @@
 							<path d="M16 16 L21 21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
 						</svg>
 					</button>
-					<button id="mobileFilterButton" class="mobile-icon-button" type="button" aria-label="Szűrők">
+
+					<button id="mobileListButton" class="mobile-icon-button" type="button" aria-label="Lista" aria-controls="listPanel" aria-expanded="false">
 						<svg viewBox="0 0 24 24" aria-hidden="true" class="mobile-icon">
-							<path d="M5 7H19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
-							<path d="M5 12H19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
-							<path d="M5 17H19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+							<path d="M8 6H20M8 12H20M8 18H20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+							<circle cx="4" cy="6" r="1.2" fill="currentColor"></circle>
+							<circle cx="4" cy="12" r="1.2" fill="currentColor"></circle>
+							<circle cx="4" cy="18" r="1.2" fill="currentColor"></circle>
+						</svg>
+					</button>
+
+					<button id="mobileMenuButton" class="mobile-icon-button" type="button" aria-label="Menü" aria-controls="filterPanel" aria-expanded="false">
+						<svg viewBox="0 0 24 24" aria-hidden="true" class="mobile-icon">
+							<path class="mobile-menu-line mobile-menu-line-top" d="M5 7H19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+							<path class="mobile-menu-line mobile-menu-line-middle" d="M5 12H19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+							<path class="mobile-menu-line mobile-menu-line-bottom" d="M5 17H19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
 						</svg>
 					</button>
 				</div>
-			</div>
+			</header>
+
 			<!-- Map -->
 			<section class="map-section">
 				<header class="topbar">
-					<div>
-						<h1>Vasti "hova a picsába menjünk?" térképe</h1>
-						<span class="app-version">v1.1</span>
-						<p>Saját gyűjtemény interaktív térképen, használd a kategóriákat szűrésre. Ha van javaslatod szólj!</p>
+					<div class="topbar-brand">
+						<div class="topbar-title-row">
+							<h1>Vasti „hova a picsába menjünk?” térképe</h1>
+							<span class="app-version">v1.1</span>
+						</div>
+						<p>Saját gyűjtemény, egy helyen. Keress, szűrj vagy böngészd listában.</p>
 					</div>
+
 					<div class="topbar-actions">
-						<button id="mobileFilterToggle" class="secondary-button mobile-filter-toggle" type="button" aria-controls="filterPanel" aria-expanded="false">Szűrők</button>
-						<button id="resetFiltersButton" class="secondary-button" type="button">Szűrők törlése</button>
+						<button id="desktopListButton" class="toolbar-button" type="button" aria-controls="listPanel" aria-expanded="false">
+							<span class="toolbar-icon">☷</span>
+							Lista
+						</button>
+						<button id="desktopEventsButton" class="toolbar-button events-highlight" type="button" aria-controls="desktopEventsPanel" aria-expanded="false">
+							<span class="toolbar-icon">◫</span>
+							Események
+							<span id="desktopEventCount" class="toolbar-count">0</span>
+						</button>
+						<button id="resetFiltersButton" class="toolbar-button subtle" type="button">Szűrők törlése</button>
 					</div>
 				</header>
-				<div id="filterPanel" class="filter-panel">
+
+				<!-- Filters -->
+				<aside id="filterPanel" class="filter-panel" aria-label="Keresés és szűrők">
+					<div class="mobile-menu-heading">
+						<span class="panel-eyebrow">Felfedezés</span>
+						<h2>Keresés és szűrők</h2>
+					</div>
+
 					<div class="map-search">
 						<label for="placeSearchInput">Hely keresése</label>
-						<input id="placeSearchInput" type="search" placeholder="Név, cím vagy kategória..." autocomplete="off">
+						<div class="search-input-wrap">
+							<svg viewBox="0 0 24 24" aria-hidden="true">
+								<circle cx="11" cy="11" r="5.5" fill="none" stroke="currentColor" stroke-width="2"></circle>
+								<path d="M16 16 L21 21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+							</svg>
+							<input id="placeSearchInput" type="search" placeholder="Név, cím vagy kategória..." autocomplete="off">
+						</div>
 						<div id="placeSearchResults" class="map-search-results hidden"></div>
 					</div>
-					<strong>Kategóriák</strong>
-					<div id="categoryFilters" class="category-filters"></div>
-					<div class="price-filter-section">
+
+					<section class="filter-section">
+						<div class="filter-section-heading">
+							<strong>Kategóriák</strong>
+							<span id="activeFilterCount" class="filter-counter">Mind</span>
+						</div>
+						<div id="categoryFilters" class="category-filters"></div>
+					</section>
+
+					<section id="priceFilterSection" class="filter-section price-filter-section hidden">
 						<strong>Árkategória</strong>
-						<div id="priceFilters" class="category-filters">
+						<div id="priceFilters" class="category-filters compact">
 							<button class="category-button price-filter-button" type="button" data-price-level="cheap">Olcsó</button>
 							<button class="category-button price-filter-button" type="button" data-price-level="expensive">Drága</button>
 						</div>
+					</section>
+
+					<section class="mobile-events-section">
+						<div class="panel-section-heading">
+							<div>
+								<span class="panel-eyebrow">Aktuális</span>
+								<h3 id="mobileEventsTitle">Havi események</h3>
+							</div>
+						</div>
+						<div id="mobileEventsList" class="events-list compact"></div>
+					</section>
+
+					<div class="mobile-menu-actions">
+						<button id="mobileResetFiltersButton" class="panel-button secondary" type="button">Szűrők törlése</button>
+						<button id="mobileShowMapButton" class="panel-button primary" type="button">Térkép</button>
 					</div>
-				</div>
+				</aside>
+
+				<!-- List -->
+				<aside id="listPanel" class="list-panel" aria-hidden="true">
+					<div class="list-panel-header">
+						<div>
+							<span class="panel-eyebrow">Böngészés</span>
+							<h2>Helyek listája</h2>
+							<p id="listResultsCount">0 hely</p>
+						</div>
+						<button id="closeListButton" class="panel-close-button" type="button" aria-label="Lista bezárása">×</button>
+					</div>
+
+					<div class="list-tools">
+						<div class="search-input-wrap">
+							<svg viewBox="0 0 24 24" aria-hidden="true">
+								<circle cx="11" cy="11" r="5.5" fill="none" stroke="currentColor" stroke-width="2"></circle>
+								<path d="M16 16 L21 21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+							</svg>
+							<input id="listSearchInput" type="search" placeholder="Keresés a listában..." autocomplete="off">
+						</div>
+
+						<label class="list-sort-field" for="listSortSelect">
+							<span>Rendezés</span>
+							<select id="listSortSelect">
+								<option value="name">Név szerint</option>
+								<option value="city">Település szerint</option>
+							</select>
+						</label>
+					</div>
+
+					<section class="list-filter-block">
+						<div class="filter-section-heading">
+							<strong>Kategóriák</strong>
+							<button id="listClearFiltersButton" class="text-button" type="button">Törlés</button>
+						</div>
+						<div id="listCategoryFilters" class="category-filters list-categories"></div>
+					</section>
+
+					<section id="listPriceFilterSection" class="list-filter-block hidden">
+						<strong>Árkategória</strong>
+						<div id="listPriceFilters" class="category-filters compact">
+							<button class="category-button price-filter-button" type="button" data-price-level="cheap">Olcsó</button>
+							<button class="category-button price-filter-button" type="button" data-price-level="expensive">Drága</button>
+						</div>
+					</section>
+
+					<div id="placesListView" class="places-list-view"></div>
+				</aside>
+
+				<!-- Events -->
+				<aside id="desktopEventsPanel" class="desktop-events-panel" aria-hidden="true">
+					<div class="panel-section-heading">
+						<div>
+							<span class="panel-eyebrow">Aktuális</span>
+							<h2 id="desktopEventsTitle">Havi események</h2>
+						</div>
+						<button id="desktopEventsClose" class="panel-close-button" type="button" aria-label="Események bezárása">×</button>
+					</div>
+					<div id="desktopEventsList" class="events-list"></div>
+				</aside>
+
 				<div id="map" aria-label="Interaktív térkép"></div>
 			</section>
+
 			<!-- Details -->
 			<div id="detailsBackdrop" class="details-backdrop" aria-hidden="true"></div>
 			<aside id="detailsPanel" class="details-panel" aria-hidden="true">
@@ -77,12 +200,14 @@
 					<span id="detailsDragHintText">Húzd fel a részletekhez</span>
 				</div>
 			</aside>
+
 			<!-- Lightbox -->
 			<div id="imageLightbox" class="image-lightbox" aria-hidden="true">
 				<button id="imageLightboxClose" class="image-lightbox-close" type="button" aria-label="Kép bezárása">×</button>
 				<img id="imageLightboxImage" class="image-lightbox-image" src="" alt="">
 			</div>
 		</main>
+
 		<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 		<script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 		<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
