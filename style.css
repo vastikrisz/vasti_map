@@ -734,6 +734,15 @@ body.list-open .filter-panel {
 	text-transform: uppercase;
 }
 
+.event-date-badge.annual strong {
+	font-size: 15px;
+	letter-spacing: 0.04em;
+}
+
+.event-date-badge.annual span {
+	font-size: 8px;
+}
+
 .event-card-copy {
 	min-width: 0;
 }
@@ -770,6 +779,14 @@ body.list-open .filter-panel {
 	line-height: 1.45;
 	-webkit-box-orient: vertical;
 	-webkit-line-clamp: 2;
+}
+
+.event-rule-text {
+	display: block;
+	margin-top: 5px;
+	color: #a9c9f5;
+	font-size: 10px;
+	line-height: 1.35;
 }
 
 .event-place {

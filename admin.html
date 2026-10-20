@@ -197,43 +197,127 @@
 							<input id="eventTitle" name="title" type="text" required>
 						</div>
 
-						<div class="form-group">
+						<div class="form-group full-width">
 							<label for="eventRecurrenceType">Ismétlődés *</label>
 							<select id="eventRecurrenceType" name="recurrenceType" required>
-								<option value="none">Egyszeri</option>
-								<option value="yearly">Évente ismétlődő</option>
-								<option value="monthly">Havonta ismétlődő</option>
+								<option value="yearly">Évente ismétlődő időszak</option>
+								<option value="monthly_rule">Havi szabály szerint</option>
 							</select>
+							<p class="field-hint">Éves eseménynél elég a hónapokat megadni. Havi szabálynál a pontos dátumot a rendszer számolja ki.</p>
 						</div>
 
-						<div class="form-group">
-							<label id="eventStartDateLabel" for="eventStartDate">Kezdő dátum *</label>
-							<input id="eventStartDate" name="startDate" type="date" required>
-							<p id="eventRecurrenceHint" class="field-hint">Egyszeri eseménynél ez a tényleges kezdő dátum.</p>
+						<div id="eventYearlyFields" class="event-schedule-fields full-width">
+							<div class="form-group">
+								<label for="eventStartMonth">Kezdő hónap *</label>
+								<select id="eventStartMonth" name="startMonth">
+									<option value="1">Január</option>
+									<option value="2">Február</option>
+									<option value="3">Március</option>
+									<option value="4">Április</option>
+									<option value="5">Május</option>
+									<option value="6">Június</option>
+									<option value="7">Július</option>
+									<option value="8">Augusztus</option>
+									<option value="9">Szeptember</option>
+									<option value="10">Október</option>
+									<option value="11">November</option>
+									<option value="12">December</option>
+								</select>
+							</div>
+							<div class="form-group">
+								<label for="eventEndMonth">Záró hónap *</label>
+								<select id="eventEndMonth" name="endMonth">
+									<option value="1">Január</option>
+									<option value="2">Február</option>
+									<option value="3">Március</option>
+									<option value="4">Április</option>
+									<option value="5">Május</option>
+									<option value="6">Június</option>
+									<option value="7">Július</option>
+									<option value="8">Augusztus</option>
+									<option value="9">Szeptember</option>
+									<option value="10">Október</option>
+									<option value="11">November</option>
+									<option value="12">December</option>
+								</select>
+							</div>
 						</div>
 
-						<div id="eventEndDateGroup" class="form-group">
-							<label for="eventEndDate">Záró dátum</label>
-							<input id="eventEndDate" name="endDate" type="date">
-							<p class="field-hint">Többnapos eseménynél töltsd ki.</p>
-						</div>
-
-						<div class="form-group">
-							<label for="eventStartTime">Kezdés</label>
-							<input id="eventStartTime" name="startTime" type="time">
-						</div>
-
-						<div class="form-group">
-							<label for="eventEndTime">Befejezés</label>
-							<input id="eventEndTime" name="endTime" type="time">
+						<div id="eventMonthlyRuleFields" class="event-schedule-fields full-width hidden">
+							<div class="form-group">
+								<label for="eventOrdinal">Hányadik alkalom *</label>
+								<select id="eventOrdinal" name="ordinal">
+									<option value="1">Első</option>
+									<option value="2">Második</option>
+									<option value="3">Harmadik</option>
+									<option value="4">Negyedik</option>
+									<option value="5">Ötödik</option>
+									<option value="-1">Utolsó</option>
+								</select>
+							</div>
+							<div class="form-group">
+								<label for="eventWeekday">Nap *</label>
+								<select id="eventWeekday" name="weekday">
+									<option value="1">Hétfő</option>
+									<option value="2">Kedd</option>
+									<option value="3">Szerda</option>
+									<option value="4">Csütörtök</option>
+									<option value="5">Péntek</option>
+									<option value="6">Szombat</option>
+									<option value="0">Vasárnap</option>
+								</select>
+							</div>
+							<p id="eventRulePreview" class="event-rule-preview full-width"></p>
 						</div>
 
 						<div class="form-group full-width">
 							<label for="eventPlaceId">Kapcsolt térképes hely</label>
-							<select id="eventPlaceId" name="placeId">
-								<option value="">Nincs kapcsolt hely</option>
-							</select>
-							<p class="field-hint">Ha kiválasztasz egy helyet, a publikus eseménykártyáról rá lehet ugrani a térképen.</p>
+							<div class="event-place-row">
+								<select id="eventPlaceId" name="placeId">
+									<option value="">Nincs kapcsolt hely</option>
+								</select>
+								<button id="toggleEventPlaceCreatorButton" class="secondary-button" type="button">+ Új eseményhelyszín</button>
+							</div>
+							<p class="field-hint">Az eseményre kattintva a térkép a kapcsolt helyre ugrik. Az eseményhelyszínek normál böngészéskor rejtve maradnak.</p>
+
+							<div id="eventPlaceCreator" class="event-place-creator hidden">
+								<div class="event-place-creator-heading">
+									<div>
+										<strong>Új eseményhelyszín</strong>
+										<span>Csak esemény megnyitásakor jelenik meg a térképen.</span>
+									</div>
+									<button id="cancelEventPlaceButton" class="icon-close-button" type="button" aria-label="Bezárás">×</button>
+								</div>
+								<div class="event-place-grid">
+									<div class="form-group full-width">
+										<label for="eventPlaceName">Helyszín neve *</label>
+										<input id="eventPlaceName" type="text" placeholder="Például: Hungexpo">
+									</div>
+									<div class="form-group full-width">
+										<label for="eventPlaceAddress">Cím *</label>
+										<div class="address-row">
+											<input id="eventPlaceAddress" type="text" placeholder="Például: 1101 Budapest, Albertirsai út 10.">
+											<button id="findEventPlaceButton" class="secondary-button" type="button">Hely megkeresése</button>
+										</div>
+									</div>
+									<div class="form-group full-width">
+										<label for="eventPlaceCity">Település *</label>
+										<input id="eventPlaceCity" type="text" placeholder="Például: Budapest">
+									</div>
+									<div class="form-group">
+										<label for="eventPlaceLatitude">Szélesség *</label>
+										<input id="eventPlaceLatitude" type="number" step="any" min="-90" max="90">
+									</div>
+									<div class="form-group">
+										<label for="eventPlaceLongitude">Hosszúság *</label>
+										<input id="eventPlaceLongitude" type="number" step="any" min="-180" max="180">
+									</div>
+								</div>
+								<p id="eventPlaceMessage" class="field-message" aria-live="polite"></p>
+								<div class="event-place-actions">
+									<button id="saveEventPlaceButton" type="button">Helyszín mentése és kiválasztása</button>
+								</div>
+							</div>
 						</div>
 
 						<div class="form-group full-width">

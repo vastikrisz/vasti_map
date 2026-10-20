@@ -18,6 +18,27 @@ const CATEGORY_MARKER_CONFIG = {
 	"Helyi érdekesség": { symbol: "★", color: "#ec4899" }
 };
 const DEFAULT_MARKER_CONFIG = { symbol: "●", color: "#64748b" };
+const MONTH_NAMES = [
+	"Január", "Február", "Március", "Április", "Május", "Június",
+	"Július", "Augusztus", "Szeptember", "Október", "November", "December"
+];
+const ORDINAL_NAMES = {
+	"1": "első",
+	"2": "második",
+	"3": "harmadik",
+	"4": "negyedik",
+	"5": "ötödik",
+	"-1": "utolsó"
+};
+const WEEKDAY_RULE_NAMES = {
+	"0": "vasárnapján",
+	"1": "hétfőjén",
+	"2": "keddjén",
+	"3": "szerdáján",
+	"4": "csütörtökén",
+	"5": "péntekén",
+	"6": "szombatján"
+};
 
 // State
 let places = [];
@@ -147,28 +168,50 @@ function isMobilePortrait() {
 	return isMobile() && !isMobileLandscape();
 }
 
-function parseDate(value) {
-	if (!value) {
-		return null;
-	}
-
-	const [year, month, day] = value.split("-").map(Number);
-	if (!year || !month || !day) {
-		return null;
-	}
-
-	return new Date(year, month - 1, day);
+function getMonthName(month) {
+	return MONTH_NAMES[Number(month) - 1] || "";
 }
 
-function formatDate(date) {
+function getMonthRangeLabel(startMonth, endMonth) {
+	const start = getMonthName(startMonth);
+	const end = getMonthName(endMonth);
+	return Number(startMonth) === Number(endMonth) ? start : `${start}–${end}`;
+}
+
+function monthRangeContains(month, startMonth, endMonth) {
+	const start = Number(startMonth);
+	const end = Number(endMonth || startMonth);
+	if (start <= end) {
+		return month >= start && month <= end;
+	}
+	return month >= start || month <= end;
+}
+
+function getNthWeekdayDate(year, monthIndex, ordinal, weekday) {
+	const targetWeekday = Number(weekday);
+	const targetOrdinal = Number(ordinal);
+	if (targetOrdinal === -1) {
+		const lastDay = new Date(year, monthIndex + 1, 0);
+		const offset = (lastDay.getDay() - targetWeekday + 7) % 7;
+		return new Date(year, monthIndex, lastDay.getDate() - offset);
+	}
+
+	const firstDay = new Date(year, monthIndex, 1);
+	const offset = (targetWeekday - firstDay.getDay() + 7) % 7;
+	const day = 1 + offset + ((targetOrdinal - 1) * 7);
+	const result = new Date(year, monthIndex, day);
+	return result.getMonth() === monthIndex ? result : null;
+}
+
+function formatOccurrenceDate(date) {
 	return new Intl.DateTimeFormat("hu-HU", {
-		month: "short",
+		month: "long",
 		day: "numeric"
 	}).format(date);
 }
 
-function formatTime(value) {
-	return value ? String(value).slice(0, 5) : "";
+function getMonthlyRuleLabel(ordinal, weekday) {
+	return `Minden hónap ${ORDINAL_NAMES[String(ordinal)] || ""} ${WEEKDAY_RULE_NAMES[String(weekday)] || ""}`.trim();
 }
 
 function getMonthTitle(date = new Date()) {
@@ -178,6 +221,10 @@ function getMonthTitle(date = new Date()) {
 
 function getPlaceById(placeId) {
 	return places.find((place) => Number(place.id) === Number(placeId)) || null;
+}
+
+function getBrowseablePlaces() {
+	return places.filter((place) => !place.isEventOnly);
 }
 
 // Version
@@ -216,7 +263,8 @@ async function loadPlaces() {
 			opening_hours,
 			categories,
 			price_level,
-			image_urls
+			image_urls,
+			is_event_only
 		`)
 		.eq("is_published", true)
 		.order("name", { ascending: true });
@@ -244,13 +292,14 @@ async function loadPlaces() {
 			categories,
 			priceLevel: place.price_level || null,
 			image: imageUrls[0] || "",
+			isEventOnly: Boolean(place.is_event_only),
 			searchText: [place.name, place.address, place.city, ...categories]
 				.join(" ")
 				.toLocaleLowerCase("hu")
 		};
 	});
 
-	allCategories = [...new Set(places.flatMap((place) => place.categories))]
+	allCategories = [...new Set(getBrowseablePlaces().flatMap((place) => place.categories))]
 		.sort((a, b) => a.localeCompare(b, "hu"));
 
 	renderCategoryFilters();
@@ -265,16 +314,16 @@ async function loadEvents() {
 			id,
 			title,
 			description,
-			start_date,
-			end_date,
-			start_time,
-			end_time,
 			recurrence_type,
+			start_month,
+			end_month,
+			recurrence_ordinal,
+			recurrence_weekday,
 			place_id,
 			website
 		`)
 		.eq("is_published", true)
-		.order("start_date", { ascending: true });
+		.order("title", { ascending: true });
 
 	if (error) {
 		console.warn("Az események nem tölthetők be:", error.message);
@@ -284,11 +333,13 @@ async function loadEvents() {
 			id: Number(event.id),
 			title: event.title,
 			description: event.description || "",
-			startDate: event.start_date,
-			endDate: event.end_date || null,
-			startTime: event.start_time || null,
-			endTime: event.end_time || null,
-			recurrenceType: event.recurrence_type || "none",
+			recurrenceType: event.recurrence_type || "yearly",
+			startMonth: event.start_month ? Number(event.start_month) : null,
+			endMonth: event.end_month ? Number(event.end_month) : null,
+			recurrenceOrdinal: event.recurrence_ordinal ? Number(event.recurrence_ordinal) : null,
+			recurrenceWeekday: event.recurrence_weekday === null || event.recurrence_weekday === undefined
+				? null
+				: Number(event.recurrence_weekday),
 			placeId: event.place_id ? Number(event.place_id) : null,
 			website: event.website || ""
 		}));
@@ -329,7 +380,7 @@ function isFoodPlace(place) {
 }
 
 function getVisiblePlaces() {
-	return places.filter((place) => {
+	return getBrowseablePlaces().filter((place) => {
 		const categoryMatches = selectedCategories.size === 0 ||
 			place.categories.some((category) => selectedCategories.has(category));
 
@@ -434,7 +485,7 @@ function getEventMarkerIcon() {
 function buildPlaceMarkers() {
 	markerByPlaceId.clear();
 
-	places.forEach((place) => {
+	getBrowseablePlaces().forEach((place) => {
 		const marker = L.marker([place.latitude, place.longitude], {
 			icon: getCategoryMarkerIcon(place),
 			title: place.name,
@@ -505,7 +556,7 @@ function renderPlaceSearchResults() {
 		return;
 	}
 
-	const matchingPlaces = places
+	const matchingPlaces = getBrowseablePlaces()
 		.filter((place) => place.searchText.includes(searchText))
 		.slice(0, 10);
 
@@ -616,72 +667,79 @@ function setListOpen(isOpen) {
 // Events
 function getMonthlyEvents(referenceDate) {
 	const year = referenceDate.getFullYear();
-	const month = referenceDate.getMonth();
-	const monthStart = new Date(year, month, 1);
-	const monthEnd = new Date(year, month + 1, 0, 23, 59, 59, 999);
+	const monthIndex = referenceDate.getMonth();
+	const monthNumber = monthIndex + 1;
 	const occurrences = [];
 
 	events.forEach((event) => {
-		const startDate = parseDate(event.startDate);
-		if (!startDate) {
+		if (event.recurrenceType === "monthly_rule") {
+			const occurrenceDate = getNthWeekdayDate(
+				year,
+				monthIndex,
+				event.recurrenceOrdinal,
+				event.recurrenceWeekday
+			);
+			if (!occurrenceDate) {
+				return;
+			}
+
+			occurrences.push({
+				...event,
+				occurrenceDate,
+				sortDay: occurrenceDate.getDate()
+			});
 			return;
 		}
 
-		let occurrenceDate = null;
-		let displayEndDate = null;
-
-		if (event.recurrenceType === "monthly") {
-			const day = startDate.getDate();
-			const candidate = new Date(year, month, day);
-			if (candidate.getMonth() === month) {
-				occurrenceDate = candidate;
-			}
-		} else if (event.recurrenceType === "yearly") {
-			if (startDate.getMonth() === month) {
-				occurrenceDate = new Date(year, month, startDate.getDate());
-			}
-		} else {
-			const endDate = parseDate(event.endDate) || startDate;
-			if (startDate <= monthEnd && endDate >= monthStart) {
-				occurrenceDate = startDate < monthStart ? monthStart : startDate;
-				displayEndDate = endDate;
-			}
-		}
-
-		if (!occurrenceDate) {
+		if (!event.startMonth || !monthRangeContains(monthNumber, event.startMonth, event.endMonth)) {
 			return;
 		}
 
 		occurrences.push({
 			...event,
-			occurrenceDate,
-			displayEndDate
+			occurrenceDate: null,
+			sortDay: 0
 		});
 	});
 
-	return occurrences.sort((a, b) => a.occurrenceDate - b.occurrenceDate || a.title.localeCompare(b.title, "hu"));
+	return occurrences.sort((a, b) => a.sortDay - b.sortDay || a.title.localeCompare(b.title, "hu"));
 }
 
 function getEventDateLabel(event) {
-	const start = formatDate(event.occurrenceDate);
-	const end = event.displayEndDate && event.displayEndDate.getTime() !== event.occurrenceDate.getTime()
-		? ` – ${formatDate(event.displayEndDate)}`
-		: "";
-	const startTime = formatTime(event.startTime);
-	const endTime = formatTime(event.endTime);
-	const time = startTime ? ` · ${startTime}${endTime ? `–${endTime}` : ""}` : "";
-
-	return `${start}${end}${time}`;
+	if (event.recurrenceType === "monthly_rule" && event.occurrenceDate) {
+		return formatOccurrenceDate(event.occurrenceDate);
+	}
+	return getMonthRangeLabel(event.startMonth, event.endMonth || event.startMonth);
 }
 
 function getEventRecurrenceLabel(event) {
-	if (event.recurrenceType === "monthly") {
-		return "Havonta";
+	return event.recurrenceType === "monthly_rule" ? "Havi szabály" : "Évente";
+}
+
+function getEventRuleText(event) {
+	if (event.recurrenceType !== "monthly_rule") {
+		return "";
 	}
-	if (event.recurrenceType === "yearly") {
-		return "Évente";
+	return getMonthlyRuleLabel(event.recurrenceOrdinal, event.recurrenceWeekday);
+}
+
+function getEventDateBadge(event) {
+	if (event.recurrenceType === "monthly_rule" && event.occurrenceDate) {
+		return `
+			<div class="event-date-badge">
+				<strong>${event.occurrenceDate.getDate()}</strong>
+				<span>${new Intl.DateTimeFormat("hu-HU", { month: "short" }).format(event.occurrenceDate)}</span>
+			</div>
+		`;
 	}
-	return "Egyszeri";
+
+	const monthLabel = getMonthName(event.startMonth).slice(0, 3).toUpperCase();
+	return `
+		<div class="event-date-badge annual">
+			<strong>${escapeHtml(monthLabel)}</strong>
+			<span>ÉVENTE</span>
+		</div>
+	`;
 }
 
 function renderEventCards(target) {
@@ -698,9 +756,9 @@ function renderEventCards(target) {
 		.map((event) => {
 			const place = getPlaceById(event.placeId);
 			const placeLabel = place ? place.name : "Helyszín nélkül";
-			const description = event.description
-				? `<p>${escapeHtml(event.description)}</p>`
-				: "";
+			const description = event.description ? `<p>${escapeHtml(event.description)}</p>` : "";
+			const ruleText = getEventRuleText(event);
+			const ruleHtml = ruleText ? `<span class="event-rule-text">${escapeHtml(ruleText)}</span>` : "";
 			const locationHint = place
 				? `<span class="event-place">📍 ${escapeHtml(placeLabel)}</span>`
 				: `<span class="event-place muted">Nincs térképes hely kapcsolva</span>`;
@@ -708,16 +766,14 @@ function renderEventCards(target) {
 			return `
 				<article class="event-card">
 					<button class="event-card-main" type="button" data-event-focus-id="${event.id}" ${place ? "" : "disabled"}>
-						<div class="event-date-badge">
-							<strong>${event.occurrenceDate.getDate()}</strong>
-							<span>${new Intl.DateTimeFormat("hu-HU", { month: "short" }).format(event.occurrenceDate)}</span>
-						</div>
+						${getEventDateBadge(event)}
 						<div class="event-card-copy">
 							<div class="event-card-meta">
 								<span>${escapeHtml(getEventDateLabel(event))}</span>
 								<span class="event-repeat-badge">${getEventRecurrenceLabel(event)}</span>
 							</div>
 							<h4>${escapeHtml(event.title)}</h4>
+							${ruleHtml}
 							${description}
 							${locationHint}
 						</div>

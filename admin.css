@@ -1106,6 +1106,108 @@ input[type="file"]::file-selector-button {
 	opacity: 0.6;
 }
 
+.event-schedule-fields {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 18px;
+}
+
+.event-schedule-fields.hidden {
+	display: none;
+}
+
+.event-rule-preview {
+	margin: -4px 0 0;
+	padding: 11px 12px;
+	border: 1px solid #26384d;
+	border-radius: 10px;
+	background: #101a25;
+	color: #9cc6fb;
+	font-size: 13px;
+}
+
+.event-place-row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 10px;
+}
+
+.event-place-creator {
+	margin-top: 14px;
+	padding: 14px;
+	border: 1px solid #2d4057;
+	border-radius: 14px;
+	background: #101923;
+}
+
+.event-place-creator.hidden {
+	display: none;
+}
+
+.event-place-creator-heading {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 14px;
+}
+
+.event-place-creator-heading strong,
+.event-place-creator-heading span {
+	display: block;
+}
+
+.event-place-creator-heading strong {
+	color: #f1f5f9;
+	font-size: 15px;
+}
+
+.event-place-creator-heading span {
+	margin-top: 3px;
+	color: #8fa2b7;
+	font-size: 12px;
+}
+
+.event-place-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 12px;
+}
+
+.event-place-actions {
+	display: flex;
+	justify-content: flex-end;
+	margin-top: 12px;
+}
+
+.event-place-actions button {
+	background: #2563eb;
+	color: #ffffff;
+	font-weight: 700;
+}
+
+.icon-close-button {
+	display: grid;
+	place-items: center;
+	width: 34px;
+	height: 34px;
+	padding: 0;
+	border: 1px solid #33465d;
+	border-radius: 9px;
+	background: #162231;
+	color: #c8d4e2;
+	font-size: 20px;
+	line-height: 1;
+}
+
+.error-text {
+	color: #f87171;
+}
+
+.success-text {
+	color: #4ade80;
+}
+
 .events-manager {
 	display: flex;
 	flex-direction: column;
@@ -1203,6 +1305,16 @@ input[type="file"]::file-selector-button {
 @media (max-width: 720px) {
 	.event-form {
 		grid-template-columns: 1fr;
+	}
+
+	.event-schedule-fields,
+	.event-place-grid,
+	.event-place-row {
+		grid-template-columns: 1fr;
+	}
+
+	.event-place-row .secondary-button {
+		width: 100%;
 	}
 
 	.event-admin-item {

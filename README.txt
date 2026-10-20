@@ -1,42 +1,21 @@
-VASTI MAP
+Vasti Map
 =========
 
-Publikus térkép:
-- index.html
-- style.css
-- script.js
+Publikus térkép: index.html
+Adminfelület: admin.html
 
-Admin:
-- admin.html
-- admin.css
-- admin.js
-
-Beállítás:
-- config.js tartalmazza a Supabase kliens publikus konfigurációját.
-- Az eseményrendszer első használata előtt futtasd a Supabase SQL Editorban a supabase-events.sql fájlt.
-
-Fő publikus funkciók:
-- modern kategória-markerek és cluster jelölők
-- keresés és kategória/ár szűrés
-- mobil seamless oldalsó menü
-- mobil és desktop lista nézet
+Fő funkciók
+-----------
+- kategória- és ár szerinti szűrés
+- kereső és lista nézet
+- mobil és asztali térképes felület
 - havi eseményajánló
-- eseményhez kapcsolt hely ideiglenes térképes kiemelése
-- mobil portrait bottom sheet
-- külön mobil landscape elrendezés
-- desktop oldalsó adatlap
-- képnagyító lightbox
-- automatikus verziószám
+- éves, hónap-alapú események
+- havi szabály szerint számolt események
+- eseményhez kapcsolható rejtett eseményhelyszínek
+- adminos hely- és eseménykezelés
+- verzióértesítő email rendszer
 
-Esemény ismétlődés:
-- Egyszeri: a kezdő és opcionális záró dátum tényleges dátum.
-- Évente: a minta dátum hónapja és napja ismétlődik évente.
-- Havonta: a minta dátum napja ismétlődik minden hónapban.
-
-Későbbre hagyott funkciók:
-- útvonaltervező
-- valódi távolság
-- kedvencek / meglátogatott helyek
-- közvetlen helylinkek
-- közeli helyek
-- random „Hova menjünk?” funkció
+Supabase
+--------
+A frissített supabase-events.sql egyszeri futtatása szükséges az eseményrendszer új mezőihez és az eseményhelyszínekhez. A fájl meglévő events tábla esetén migrációként is futtatható.

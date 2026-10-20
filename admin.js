@@ -2,6 +2,27 @@
 const ADMIN_USER_ID = "df168eb9-7131-4b74-b757-75f6a653e299";
 const IMAGE_BUCKET = "place-images";
 const RELEASE_FUNCTION = "send-release-email";
+const MONTH_NAMES = [
+	"Január", "Február", "Március", "Április", "Május", "Június",
+	"Július", "Augusztus", "Szeptember", "Október", "November", "December"
+];
+const ORDINAL_NAMES = {
+	"1": "első",
+	"2": "második",
+	"3": "harmadik",
+	"4": "negyedik",
+	"5": "ötödik",
+	"-1": "utolsó"
+};
+const WEEKDAY_RULE_NAMES = {
+	"0": "vasárnapján",
+	"1": "hétfőjén",
+	"2": "keddjén",
+	"3": "szerdáján",
+	"4": "csütörtökén",
+	"5": "péntekén",
+	"6": "szombatján"
+};
 
 // Auth
 const loginSection = document.getElementById("loginSection");
@@ -46,14 +67,25 @@ const eventsTabButton = document.getElementById("eventsTabButton");
 const eventForm = document.getElementById("eventForm");
 const eventTitleInput = document.getElementById("eventTitle");
 const eventRecurrenceType = document.getElementById("eventRecurrenceType");
-const eventStartDate = document.getElementById("eventStartDate");
-const eventStartDateLabel = document.getElementById("eventStartDateLabel");
-const eventRecurrenceHint = document.getElementById("eventRecurrenceHint");
-const eventEndDateGroup = document.getElementById("eventEndDateGroup");
-const eventEndDate = document.getElementById("eventEndDate");
-const eventStartTime = document.getElementById("eventStartTime");
-const eventEndTime = document.getElementById("eventEndTime");
+const eventYearlyFields = document.getElementById("eventYearlyFields");
+const eventStartMonth = document.getElementById("eventStartMonth");
+const eventEndMonth = document.getElementById("eventEndMonth");
+const eventMonthlyRuleFields = document.getElementById("eventMonthlyRuleFields");
+const eventOrdinal = document.getElementById("eventOrdinal");
+const eventWeekday = document.getElementById("eventWeekday");
+const eventRulePreview = document.getElementById("eventRulePreview");
 const eventPlaceId = document.getElementById("eventPlaceId");
+const toggleEventPlaceCreatorButton = document.getElementById("toggleEventPlaceCreatorButton");
+const eventPlaceCreator = document.getElementById("eventPlaceCreator");
+const eventPlaceName = document.getElementById("eventPlaceName");
+const eventPlaceAddress = document.getElementById("eventPlaceAddress");
+const eventPlaceCity = document.getElementById("eventPlaceCity");
+const eventPlaceLatitude = document.getElementById("eventPlaceLatitude");
+const eventPlaceLongitude = document.getElementById("eventPlaceLongitude");
+const eventPlaceMessage = document.getElementById("eventPlaceMessage");
+const findEventPlaceButton = document.getElementById("findEventPlaceButton");
+const saveEventPlaceButton = document.getElementById("saveEventPlaceButton");
+const cancelEventPlaceButton = document.getElementById("cancelEventPlaceButton");
 const eventWebsite = document.getElementById("eventWebsite");
 const eventDescription = document.getElementById("eventDescription");
 const eventIsPublished = document.getElementById("eventIsPublished");
@@ -138,6 +170,7 @@ async function loadAdminPlaces() {
 				image_urls,
 				image_storage_path,
 				is_published,
+				is_event_only,
 				created_at
 		`)
 		.order("name", {
@@ -170,11 +203,11 @@ function renderAdminPlaces() {
 	const searchText = placesSearchInput.value
 		.trim()
 		.toLocaleLowerCase("hu");
-	const filteredPlaces = adminPlaces.filter((place) => place.searchText.includes(searchText));
-	placesCount.textContent =
-		searchText
-			? `${filteredPlaces.length} találat, összesen ${adminPlaces.length} hely`
-			: `${adminPlaces.length} mentett hely`;
+	const browseablePlaces = adminPlaces.filter((place) => !place.is_event_only);
+	const filteredPlaces = browseablePlaces.filter((place) => place.searchText.includes(searchText));
+	placesCount.textContent = searchText
+		? `${filteredPlaces.length} találat, összesen ${browseablePlaces.length} hely`
+		: `${browseablePlaces.length} mentett hely`;
 	if (filteredPlaces.length === 0) {
 		placesList.innerHTML = `
 			<div class="empty-list">
@@ -340,6 +373,33 @@ async function deletePlace(placeId, placeName) {
 }
 
 // Geocoding
+async function searchLocation(query) {
+	const searchParameters = new URLSearchParams({
+		q: query,
+		format: "jsonv2",
+		limit: "1",
+		addressdetails: "1",
+		"accept-language": "hu"
+	});
+	const response = await fetch(`https://nominatim.openstreetmap.org/search?${searchParameters}`);
+	if (!response.ok) {
+		throw new Error(`A keresés HTTP-hibával tért vissza: ${response.status}`);
+	}
+	const results = await response.json();
+	if (!Array.isArray(results) || results.length === 0) {
+		return null;
+	}
+
+	const result = results[0];
+	const address = result.address || {};
+	return {
+		displayName: result.display_name,
+		latitude: Number(result.lat),
+		longitude: Number(result.lon),
+		city: address.city || address.town || address.village || address.municipality || ""
+	};
+}
+
 async function findLocationByAddress() {
 	const address = placeAddress.value.trim();
 	if (!address) {
@@ -348,54 +408,38 @@ async function findLocationByAddress() {
 		placeAddress.focus();
 		return;
 	}
+
 	findLocationButton.disabled = true;
 	findLocationButton.textContent = "Keresés...";
 	locationMessage.textContent = "Hely keresése folyamatban...";
 	locationMessage.style.color = "#94a3b8";
+
 	try {
-		const searchParameters = new URLSearchParams({
-			q: address,
-			format: "jsonv2",
-			limit: "1",
-			addressdetails: "1",
-			"accept-language": "hu"
-		});
-		const response = await fetch(`https://nominatim.openstreetmap.org/search?${searchParameters}`);
-		if (!response.ok) {
-			throw new Error(`A keresés HTTP-hibával tért vissza: ${response.status}`);
-		}
-		const results = await response.json();
-		if (!Array.isArray(results) || results.length === 0) {
+		const result = await searchLocation(address);
+		if (!result) {
 			locationMessage.textContent = "Nem találtam ilyen helyet. Próbáld meg pontosabb címmel vagy a nevezetesség nevével.";
 			locationMessage.style.color = "#f87171";
 			return;
 		}
-		const result = results[0];
-		const addressDetails = result.address || {};
-		const detectedCity = addressDetails.city ||
-			addressDetails.town ||
-			addressDetails.village ||
-			addressDetails.municipality ||
-			"";
-		if (detectedCity) {
-			cityInput.value = detectedCity;
+
+		if (result.city) {
+			cityInput.value = result.city;
 		}
-		latitudeInput.value = Number(result.lat).toFixed(7);
-		longitudeInput.value = Number(result.lon).toFixed(7);
-		updateAdminMapPosition(Number(result.lat), Number(result.lon), true);
-		locationMessage.textContent = `Találat: ${result.display_name} – OpenStreetMap`;
+		latitudeInput.value = result.latitude.toFixed(7);
+		longitudeInput.value = result.longitude.toFixed(7);
+		updateAdminMapPosition(result.latitude, result.longitude, true);
+		locationMessage.textContent = `Találat: ${result.displayName} – OpenStreetMap`;
 		locationMessage.style.color = "#4ade80";
-	}
-	catch (error) {
+	} catch (error) {
 		console.error("Helykeresési hiba:", error);
 		locationMessage.textContent = "Nem sikerült lekérni a hely koordinátáit. Próbáld újra később.";
 		locationMessage.style.color = "#f87171";
-	}
-	finally {
+	} finally {
 		findLocationButton.disabled = false;
 		findLocationButton.textContent = "Hely megkeresése";
 	}
 }
+
 async function savePlace(event) {
 	event.preventDefault();
 	showSaveMessage("");
@@ -569,13 +613,13 @@ function escapeHtml(value) {
 
 // Events
 function updateEventPlaceOptions() {
-	if (!eventPlaceId) {
-		return;
-	}
-
 	const selectedValue = eventPlaceId.value;
 	const options = adminPlaces
-		.map((place) => `<option value="${place.id}">${escapeHtml(place.name)}${place.city ? ` – ${escapeHtml(place.city)}` : ""}</option>`)
+		.map((place) => {
+			const typeLabel = place.is_event_only ? " · eseményhelyszín" : "";
+			const cityLabel = place.city ? ` – ${escapeHtml(place.city)}` : "";
+			return `<option value="${place.id}">${escapeHtml(place.name)}${cityLabel}${typeLabel}</option>`;
+		})
 		.join("");
 
 	eventPlaceId.innerHTML = `<option value="">Nincs kapcsolt hely</option>${options}`;
@@ -585,39 +629,59 @@ function updateEventPlaceOptions() {
 
 	if (adminEvents.length > 0) {
 		adminEvents.forEach((event) => {
-			event.searchText = [
-				event.title,
-				event.description,
-				getAdminEventPlaceName(event.place_id)
-			].join(" ").toLocaleLowerCase("hu");
+			event.searchText = [event.title, event.description, getAdminEventPlaceName(event.place_id)]
+				.join(" ")
+				.toLocaleLowerCase("hu");
 		});
 		renderAdminEvents();
 	}
 }
 
-function updateEventRecurrenceFields() {
-	const recurrence = eventRecurrenceType.value;
-	const recurring = recurrence !== "none";
+function getMonthName(month) {
+	return MONTH_NAMES[Number(month) - 1] || "";
+}
 
-	eventEndDateGroup.classList.toggle("hidden", recurring);
-	if (recurring) {
-		eventEndDate.value = "";
+function getMonthRangeLabel(startMonth, endMonth) {
+	const start = getMonthName(startMonth);
+	const end = getMonthName(endMonth);
+	return Number(startMonth) === Number(endMonth) ? start : `${start}–${end}`;
+}
+
+function getMonthlyRuleLabel(ordinal, weekday) {
+	return `Minden hónap ${ORDINAL_NAMES[String(ordinal)] || ""} ${WEEKDAY_RULE_NAMES[String(weekday)] || ""}`.trim();
+}
+
+function getNthWeekdayDate(year, monthIndex, ordinal, weekday) {
+	const targetWeekday = Number(weekday);
+	const targetOrdinal = Number(ordinal);
+	if (targetOrdinal === -1) {
+		const lastDay = new Date(year, monthIndex + 1, 0);
+		const offset = (lastDay.getDay() - targetWeekday + 7) % 7;
+		return new Date(year, monthIndex, lastDay.getDate() - offset);
 	}
 
-	if (recurrence === "yearly") {
-		eventStartDateLabel.textContent = "Minta dátum *";
-		eventRecurrenceHint.textContent = "A hónapot és a napot használjuk, az esemény minden évben ekkor jelenik meg.";
-		return;
-	}
+	const firstDay = new Date(year, monthIndex, 1);
+	const offset = (targetWeekday - firstDay.getDay() + 7) % 7;
+	const day = 1 + offset + ((targetOrdinal - 1) * 7);
+	const result = new Date(year, monthIndex, day);
+	return result.getMonth() === monthIndex ? result : null;
+}
 
-	if (recurrence === "monthly") {
-		eventStartDateLabel.textContent = "Minta dátum *";
-		eventRecurrenceHint.textContent = "A napot használjuk, az esemény minden hónapban ezen a napon jelenik meg.";
-		return;
-	}
+function updateEventRulePreview() {
+	const rule = getMonthlyRuleLabel(eventOrdinal.value, eventWeekday.value);
+	const now = new Date();
+	const occurrence = getNthWeekdayDate(now.getFullYear(), now.getMonth(), eventOrdinal.value, eventWeekday.value);
+	const currentDate = occurrence
+		? new Intl.DateTimeFormat("hu-HU", { month: "long", day: "numeric" }).format(occurrence)
+		: "ebben a hónapban nincs ilyen nap";
+	eventRulePreview.textContent = `${rule}. Aktuális hónap: ${currentDate}.`;
+}
 
-	eventStartDateLabel.textContent = "Kezdő dátum *";
-	eventRecurrenceHint.textContent = "Egyszeri eseménynél ez a tényleges kezdő dátum.";
+function updateEventScheduleFields() {
+	const yearly = eventRecurrenceType.value === "yearly";
+	eventYearlyFields.classList.toggle("hidden", !yearly);
+	eventMonthlyRuleFields.classList.toggle("hidden", yearly);
+	updateEventRulePreview();
 }
 
 function getAdminEventPlaceName(placeId) {
@@ -625,22 +689,131 @@ function getAdminEventPlaceName(placeId) {
 }
 
 function getAdminRecurrenceLabel(recurrenceType) {
-	if (recurrenceType === "yearly") {
-		return "Évente";
-	}
-	if (recurrenceType === "monthly") {
-		return "Havonta";
-	}
-	return "Egyszeri";
+	return recurrenceType === "monthly_rule" ? "Havi szabály" : "Évente";
 }
 
-function formatAdminEventDate(event) {
-	const date = event.start_date
-		? new Intl.DateTimeFormat("hu-HU", { year: "numeric", month: "short", day: "numeric" }).format(new Date(`${event.start_date}T12:00:00`))
-		: "Nincs dátum";
-	const startTime = event.start_time ? String(event.start_time).slice(0, 5) : "";
+function formatAdminEventSchedule(event) {
+	if (event.recurrence_type === "monthly_rule") {
+		return getMonthlyRuleLabel(event.recurrence_ordinal, event.recurrence_weekday);
+	}
+	return getMonthRangeLabel(event.start_month, event.end_month || event.start_month);
+}
 
-	return `${date}${startTime ? ` · ${startTime}` : ""}`;
+function setEventPlaceCreatorOpen(isOpen) {
+	eventPlaceCreator.classList.toggle("hidden", !isOpen);
+	toggleEventPlaceCreatorButton.setAttribute("aria-expanded", String(isOpen));
+	if (isOpen) {
+		setTimeout(() => eventPlaceName.focus(), 50);
+	}
+}
+
+function resetEventPlaceCreator() {
+	eventPlaceName.value = "";
+	eventPlaceAddress.value = "";
+	eventPlaceCity.value = "";
+	eventPlaceLatitude.value = "";
+	eventPlaceLongitude.value = "";
+	eventPlaceMessage.textContent = "";
+	eventPlaceMessage.className = "field-message";
+	setEventPlaceCreatorOpen(false);
+}
+
+async function findEventPlaceLocation() {
+	const query = eventPlaceAddress.value.trim() || eventPlaceName.value.trim();
+	if (!query) {
+		eventPlaceMessage.textContent = "Adj meg egy címet vagy helyszínnevet.";
+		eventPlaceMessage.className = "field-message error-text";
+		return;
+	}
+
+	findEventPlaceButton.disabled = true;
+	findEventPlaceButton.textContent = "Keresés...";
+	eventPlaceMessage.textContent = "Hely keresése folyamatban...";
+	eventPlaceMessage.className = "field-message";
+
+	try {
+		const result = await searchLocation(query);
+		if (!result) {
+			eventPlaceMessage.textContent = "Nem találtam ilyen helyet. Próbálj pontosabb címet.";
+			eventPlaceMessage.className = "field-message error-text";
+			return;
+		}
+
+		if (result.city) {
+			eventPlaceCity.value = result.city;
+		}
+		eventPlaceLatitude.value = result.latitude.toFixed(7);
+		eventPlaceLongitude.value = result.longitude.toFixed(7);
+		eventPlaceMessage.textContent = `Találat: ${result.displayName}`;
+		eventPlaceMessage.className = "field-message success-text";
+	} catch (error) {
+		console.error("Eseményhelyszín keresési hiba:", error);
+		eventPlaceMessage.textContent = "Nem sikerült lekérni a koordinátákat.";
+		eventPlaceMessage.className = "field-message error-text";
+	} finally {
+		findEventPlaceButton.disabled = false;
+		findEventPlaceButton.textContent = "Hely megkeresése";
+	}
+}
+
+async function saveEventPlace() {
+	const { data: userData, error: userError } = await supabaseClient.auth.getUser();
+	if (userError || !userData?.user || userData.user.id !== ADMIN_USER_ID) {
+		eventPlaceMessage.textContent = "A mentéshez adminisztrátorként kell bejelentkezned.";
+		eventPlaceMessage.className = "field-message error-text";
+		return;
+	}
+
+	const name = eventPlaceName.value.trim();
+	const address = eventPlaceAddress.value.trim();
+	const city = eventPlaceCity.value.trim();
+	const latitude = Number(eventPlaceLatitude.value);
+	const longitude = Number(eventPlaceLongitude.value);
+
+	if (!name || !address || !city || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+		eventPlaceMessage.textContent = "A nevet, címet, települést és koordinátákat kötelező megadni.";
+		eventPlaceMessage.className = "field-message error-text";
+		return;
+	}
+
+	saveEventPlaceButton.disabled = true;
+	saveEventPlaceButton.textContent = "Mentés...";
+	const { data, error } = await supabaseClient
+		.from("places")
+		.insert({
+			name,
+			address,
+			city,
+			latitude,
+			longitude,
+			website: null,
+			description: null,
+			ticket_info: null,
+			opening_hours: null,
+			categories: ["Eseményhelyszín"],
+			price_level: null,
+			image_urls: [],
+			image_storage_path: null,
+			is_published: true,
+			is_event_only: true
+		})
+		.select("id, name")
+		.single();
+
+	saveEventPlaceButton.disabled = false;
+	saveEventPlaceButton.textContent = "Helyszín mentése és kiválasztása";
+	if (error) {
+		console.error("Eseményhelyszín mentési hiba:", error);
+		eventPlaceMessage.textContent = `Nem sikerült elmenteni: ${error.message}`;
+		eventPlaceMessage.className = "field-message error-text";
+		return;
+	}
+
+	await loadAdminPlaces();
+	eventPlaceId.value = String(data.id);
+	resetEventPlaceCreator();
+	eventSaveMessage.textContent = `Eseményhelyszín létrehozva: ${data.name}`;
+	eventSaveMessage.className = "message success full-width";
 }
 
 async function loadAdminEvents() {
@@ -654,25 +827,23 @@ async function loadAdminEvents() {
 			id,
 			title,
 			description,
-			start_date,
-			end_date,
-			start_time,
-			end_time,
 			recurrence_type,
+			start_month,
+			end_month,
+			recurrence_ordinal,
+			recurrence_weekday,
 			place_id,
 			website,
 			is_published,
 			created_at,
 			updated_at
 		`)
-		.order("start_date", { ascending: true })
 		.order("title", { ascending: true });
 
 	refreshEventsButton.disabled = false;
-
 	if (error) {
 		console.error("Eseménylista betöltési hiba:", error);
-		eventsListMessage.textContent = "Nem sikerült betölteni az eseményeket. Ha még nem hoztad létre az events táblát, futtasd a supabase-events.sql fájlt.";
+		eventsListMessage.textContent = "Nem sikerült betölteni az eseményeket. Futtasd a frissített supabase-events.sql fájlt.";
 		eventsListMessage.className = "message error";
 		adminEvents = [];
 		renderAdminEvents();
@@ -681,11 +852,9 @@ async function loadAdminEvents() {
 
 	adminEvents = (data || []).map((event) => ({
 		...event,
-		searchText: [
-			event.title,
-			event.description,
-			getAdminEventPlaceName(event.place_id)
-		].join(" ").toLocaleLowerCase("hu")
+		searchText: [event.title, event.description, getAdminEventPlaceName(event.place_id)]
+			.join(" ")
+			.toLocaleLowerCase("hu")
 	}));
 
 	eventsListMessage.textContent = "";
@@ -723,7 +892,7 @@ function renderAdminEvents() {
 							<h3>${escapeHtml(event.title)}</h3>
 							<span class="place-status ${statusClass}">${statusText}</span>
 						</div>
-						<p class="event-admin-date">${escapeHtml(formatAdminEventDate(event))} · ${getAdminRecurrenceLabel(event.recurrence_type)}</p>
+						<p class="event-admin-date">${escapeHtml(formatAdminEventSchedule(event))} · ${getAdminRecurrenceLabel(event.recurrence_type)}</p>
 						<p class="event-admin-place">${escapeHtml(placeName)}</p>
 					</div>
 					<div class="place-list-actions">
@@ -740,14 +909,20 @@ function resetEventForm() {
 	eventForm.reset();
 	editingEventId = null;
 	eventIsPublished.checked = true;
-	eventRecurrenceType.value = "none";
+	eventRecurrenceType.value = "yearly";
+	const currentMonth = new Date().getMonth() + 1;
+	eventStartMonth.value = String(currentMonth);
+	eventEndMonth.value = String(currentMonth);
+	eventOrdinal.value = "3";
+	eventWeekday.value = "6";
 	saveEventButton.textContent = "Esemény mentése";
 	cancelEventEditButton.classList.add("hidden");
 	eventEditModeBanner.classList.add("hidden");
 	eventEditModeTitle.textContent = "";
 	eventSaveMessage.textContent = "";
 	eventSaveMessage.className = "message full-width";
-	updateEventRecurrenceFields();
+	resetEventPlaceCreator();
+	updateEventScheduleFields();
 }
 
 function startEditingEvent(eventId) {
@@ -758,11 +933,11 @@ function startEditingEvent(eventId) {
 
 	editingEventId = Number(event.id);
 	eventTitleInput.value = event.title || "";
-	eventRecurrenceType.value = event.recurrence_type || "none";
-	eventStartDate.value = event.start_date || "";
-	eventEndDate.value = event.end_date || "";
-	eventStartTime.value = event.start_time ? String(event.start_time).slice(0, 5) : "";
-	eventEndTime.value = event.end_time ? String(event.end_time).slice(0, 5) : "";
+	eventRecurrenceType.value = event.recurrence_type === "monthly_rule" ? "monthly_rule" : "yearly";
+	eventStartMonth.value = String(event.start_month || new Date().getMonth() + 1);
+	eventEndMonth.value = String(event.end_month || event.start_month || new Date().getMonth() + 1);
+	eventOrdinal.value = String(event.recurrence_ordinal || 3);
+	eventWeekday.value = String(event.recurrence_weekday ?? 6);
 	eventPlaceId.value = event.place_id ? String(event.place_id) : "";
 	eventWebsite.value = event.website || "";
 	eventDescription.value = event.description || "";
@@ -771,23 +946,22 @@ function startEditingEvent(eventId) {
 	cancelEventEditButton.classList.remove("hidden");
 	eventEditModeBanner.classList.remove("hidden");
 	eventEditModeTitle.textContent = `– ${event.title}`;
-	updateEventRecurrenceFields();
+	setEventPlaceCreatorOpen(false);
+	updateEventScheduleFields();
 
 	eventForm.scrollTo({ top: 0, behavior: "smooth" });
 	setTimeout(() => eventTitleInput.focus({ preventScroll: true }), 250);
 }
 
 async function deleteEvent(eventId, eventTitle) {
-	const confirmed = window.confirm(`Biztosan törlöd ezt az eseményt?\n\n${eventTitle}`);
+	const confirmed = window.confirm(`Biztosan törlöd ezt az eseményt?
+
+${eventTitle}`);
 	if (!confirmed) {
 		return;
 	}
 
-	const { error } = await supabaseClient
-		.from("events")
-		.delete()
-		.eq("id", eventId);
-
+	const { error } = await supabaseClient.from("events").delete().eq("id", eventId);
 	if (error) {
 		console.error("Eseménytörlési hiba:", error);
 		eventsListMessage.textContent = `Nem sikerült törölni: ${error.message}`;
@@ -817,24 +991,14 @@ async function saveEvent(event) {
 
 	const formData = new FormData(eventForm);
 	const title = String(formData.get("title") || "").trim();
-	const recurrenceType = String(formData.get("recurrenceType") || "none");
-	const startDate = String(formData.get("startDate") || "");
-	const endDate = recurrenceType === "none" ? String(formData.get("endDate") || "") : "";
-	const startTime = String(formData.get("startTime") || "");
-	const endTime = String(formData.get("endTime") || "");
+	const recurrenceType = String(formData.get("recurrenceType") || "yearly");
 	const placeId = String(formData.get("placeId") || "");
 	const website = String(formData.get("website") || "").trim();
 	const description = String(formData.get("description") || "").trim();
 	const isPublished = formData.get("isPublished") === "on";
 
-	if (!title || !startDate) {
-		eventSaveMessage.textContent = "Az esemény nevét és dátumát kötelező megadni.";
-		eventSaveMessage.className = "message error full-width";
-		return;
-	}
-
-	if (endDate && endDate < startDate) {
-		eventSaveMessage.textContent = "A záró dátum nem lehet korábbi a kezdő dátumnál.";
+	if (!title) {
+		eventSaveMessage.textContent = "Az esemény nevét kötelező megadni.";
 		eventSaveMessage.className = "message error full-width";
 		return;
 	}
@@ -842,16 +1006,39 @@ async function saveEvent(event) {
 	const eventToSave = {
 		title,
 		description: description || null,
-		start_date: startDate,
-		end_date: endDate || null,
-		start_time: startTime || null,
-		end_time: endTime || null,
 		recurrence_type: recurrenceType,
+		start_month: null,
+		end_month: null,
+		recurrence_ordinal: null,
+		recurrence_weekday: null,
+		start_date: null,
+		end_date: null,
+		start_time: null,
+		end_time: null,
 		place_id: placeId ? Number(placeId) : null,
 		website: website || null,
 		is_published: isPublished,
 		updated_at: new Date().toISOString()
 	};
+
+	if (recurrenceType === "yearly") {
+		eventToSave.start_month = Number(formData.get("startMonth"));
+		eventToSave.end_month = Number(formData.get("endMonth"));
+		if (!eventToSave.start_month || !eventToSave.end_month) {
+			eventSaveMessage.textContent = "A kezdő és záró hónapot kötelező megadni.";
+			eventSaveMessage.className = "message error full-width";
+			return;
+		}
+	} else {
+		eventToSave.recurrence_ordinal = Number(formData.get("ordinal"));
+		eventToSave.recurrence_weekday = Number(formData.get("weekday"));
+		if (![1, 2, 3, 4, 5, -1].includes(eventToSave.recurrence_ordinal) ||
+			![0, 1, 2, 3, 4, 5, 6].includes(eventToSave.recurrence_weekday)) {
+			eventSaveMessage.textContent = "Az ismétlődési szabály nem megfelelő.";
+			eventSaveMessage.className = "message error full-width";
+			return;
+		}
+	}
 
 	const isEditing = editingEventId !== null;
 	saveEventButton.disabled = true;
@@ -863,7 +1050,6 @@ async function saveEvent(event) {
 
 	saveEventButton.disabled = false;
 	saveEventButton.textContent = isEditing ? "Módosítások mentése" : "Esemény mentése";
-
 	if (result.error) {
 		console.error("Eseménymentési hiba:", result.error);
 		eventSaveMessage.textContent = `Nem sikerült elmenteni: ${result.error.message}`;
@@ -896,7 +1082,7 @@ function switchAdminView(view) {
 
 	if (showEvents) {
 		updateEventPlaceOptions();
-		updateEventRecurrenceFields();
+		updateEventScheduleFields();
 		loadAdminEvents();
 	}
 
@@ -1606,6 +1792,7 @@ function showDashboard(user) {
 	dashboardSection.classList.remove("hidden");
 	userEmail.textContent = `Bejelentkezett felhasználó: ${user.email}`;
 	initializeAdminMap();
+	resetEventForm();
 	loadAdminPlaces();
 }
 async function verifyAdminUser(user) {
@@ -1684,7 +1871,20 @@ notificationsTabButton.addEventListener("click", () => {
 	switchAdminView("notifications");
 });
 eventForm.addEventListener("submit", saveEvent);
-eventRecurrenceType.addEventListener("change", updateEventRecurrenceFields);
+eventRecurrenceType.addEventListener("change", updateEventScheduleFields);
+eventOrdinal.addEventListener("change", updateEventRulePreview);
+eventWeekday.addEventListener("change", updateEventRulePreview);
+toggleEventPlaceCreatorButton.addEventListener("click", () => {
+	setEventPlaceCreatorOpen(eventPlaceCreator.classList.contains("hidden"));
+});
+cancelEventPlaceButton.addEventListener("click", resetEventPlaceCreator);
+eventPlaceCreator.addEventListener("keydown", (event) => {
+	if (event.key === "Enter") {
+		event.preventDefault();
+	}
+});
+findEventPlaceButton.addEventListener("click", findEventPlaceLocation);
+saveEventPlaceButton.addEventListener("click", saveEventPlace);
 eventsSearchInput.addEventListener("input", renderAdminEvents);
 refreshEventsButton.addEventListener("click", loadAdminEvents);
 clearEventFormButton.addEventListener("click", () => {
