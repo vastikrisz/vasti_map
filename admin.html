@@ -312,11 +312,27 @@
 										<label for="eventPlaceLongitude">Hosszúság *</label>
 										<input id="eventPlaceLongitude" type="number" step="any" min="-180" max="180">
 									</div>
+									<div class="form-group full-width">
+										<label>Pozíció ellenőrzése a térképen</label>
+										<p class="field-hint">Kattints a térképre, vagy húzd a jelölőt a pontos helyre.</p>
+										<div id="eventPlaceMap" class="admin-map event-place-map" aria-label="Az eseményhelyszín helyének ellenőrzése"></div>
+									</div>
 								</div>
 								<p id="eventPlaceMessage" class="field-message" aria-live="polite"></p>
 								<div class="event-place-actions">
 									<button id="saveEventPlaceButton" type="button">Helyszín mentése és kiválasztása</button>
 								</div>
+							</div>
+						</div>
+
+						<div class="form-group full-width">
+							<label for="eventImageFile">Esemény képe</label>
+							<input id="eventImageFile" type="file" accept="image/*">
+							<p class="field-hint">A kép csak az esemény részleteinek megnyitásakor jelenik meg.</p>
+							<p id="eventImageMessage" class="field-message"></p>
+							<div id="eventImagePreviewContainer" class="image-preview-container hidden">
+								<img id="eventImagePreview" class="image-preview" src="" alt="Az eseménykép előnézete">
+								<button id="removeEventImageButton" class="secondary-button" type="button">Kép eltávolítása</button>
 							</div>
 						</div>
 

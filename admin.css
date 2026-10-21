@@ -1174,6 +1174,12 @@ input[type="file"]::file-selector-button {
 	gap: 12px;
 }
 
+
+.event-place-map {
+	height: 260px;
+	margin-top: 2px;
+}
+
 .event-place-actions {
 	display: flex;
 	justify-content: flex-end;

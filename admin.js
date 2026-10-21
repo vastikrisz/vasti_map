@@ -88,6 +88,11 @@ const saveEventPlaceButton = document.getElementById("saveEventPlaceButton");
 const cancelEventPlaceButton = document.getElementById("cancelEventPlaceButton");
 const eventWebsite = document.getElementById("eventWebsite");
 const eventDescription = document.getElementById("eventDescription");
+const eventImageFile = document.getElementById("eventImageFile");
+const eventImageMessage = document.getElementById("eventImageMessage");
+const eventImagePreviewContainer = document.getElementById("eventImagePreviewContainer");
+const eventImagePreview = document.getElementById("eventImagePreview");
+const removeEventImageButton = document.getElementById("removeEventImageButton");
 const eventIsPublished = document.getElementById("eventIsPublished");
 const saveEventButton = document.getElementById("saveEventButton");
 const clearEventFormButton = document.getElementById("clearEventFormButton");
@@ -147,6 +152,11 @@ let editingOriginalImageUrl = "";
 let removeExistingImageOnSave = false;
 let adminEvents = [];
 let editingEventId = null;
+let eventPlaceMap = null;
+let eventPlaceMarker = null;
+let editingEventOriginalStoragePath = null;
+let editingEventOriginalImageUrl = "";
+let removeExistingEventImageOnSave = false;
 
 // Places
 async function loadAdminPlaces() {
@@ -699,12 +709,131 @@ function formatAdminEventSchedule(event) {
 	return getMonthRangeLabel(event.start_month, event.end_month || event.start_month);
 }
 
+function initializeEventPlaceMap() {
+	if (eventPlaceMap) {
+		setTimeout(() => eventPlaceMap.invalidateSize(), 100);
+		return;
+	}
+
+	eventPlaceMap = L.map("eventPlaceMap", {
+		zoomControl: true,
+		minZoom: 3,
+		maxZoom: 19
+	}).setView([47.1625, 19.5033], 7);
+
+	L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+		maxZoom: 19,
+		attribution: "&copy; OpenStreetMap közreműködők"
+	}).addTo(eventPlaceMap);
+
+	eventPlaceMap.on("click", (event) => {
+		const latitude = Number(event.latlng.lat.toFixed(7));
+		const longitude = Number(event.latlng.lng.toFixed(7));
+		eventPlaceLatitude.value = latitude;
+		eventPlaceLongitude.value = longitude;
+		updateEventPlaceMapPosition(latitude, longitude, false);
+		eventPlaceMessage.textContent = "A pozíciót a térképen állítottad be.";
+		eventPlaceMessage.className = "field-message success-text";
+	});
+
+	setTimeout(() => eventPlaceMap.invalidateSize(), 100);
+}
+
+function updateEventPlaceMapPosition(latitude, longitude, zoomToMarker = true) {
+	if (!Number.isFinite(Number(latitude)) || !Number.isFinite(Number(longitude))) {
+		return;
+	}
+
+	initializeEventPlaceMap();
+	const position = [Number(latitude), Number(longitude)];
+
+	if (!eventPlaceMarker) {
+		eventPlaceMarker = L.marker(position, { draggable: true }).addTo(eventPlaceMap);
+		eventPlaceMarker.on("dragend", () => {
+			const markerPosition = eventPlaceMarker.getLatLng();
+			eventPlaceLatitude.value = markerPosition.lat.toFixed(7);
+			eventPlaceLongitude.value = markerPosition.lng.toFixed(7);
+			eventPlaceMessage.textContent = "A jelölő pozíciója módosítva.";
+			eventPlaceMessage.className = "field-message success-text";
+		});
+	} else {
+		eventPlaceMarker.setLatLng(position);
+	}
+
+	if (zoomToMarker) {
+		eventPlaceMap.setView(position, 16);
+	}
+}
+
+function showEventImagePreview(imageSource) {
+	if (!imageSource) {
+		eventImagePreview.src = "";
+		eventImagePreviewContainer.classList.add("hidden");
+		return;
+	}
+
+	eventImagePreview.src = imageSource;
+	eventImagePreviewContainer.classList.remove("hidden");
+}
+
+function clearEventImageSelection(markExistingImageForRemoval = true) {
+	eventImageFile.value = "";
+	eventImageMessage.textContent = "";
+	showEventImagePreview("");
+
+	if (markExistingImageForRemoval && editingEventId !== null && editingEventOriginalImageUrl) {
+		removeExistingEventImageOnSave = true;
+	}
+}
+
+async function uploadEventImage(file) {
+	const compressedImage = await compressImageToWebp(file);
+	const storagePath = `events/${crypto.randomUUID()}.webp`;
+	const { error: uploadError } = await supabaseClient.storage
+		.from(IMAGE_BUCKET)
+		.upload(storagePath, compressedImage, {
+			contentType: "image/webp",
+			cacheControl: "31536000",
+			upsert: false
+		});
+
+	if (uploadError) {
+		throw uploadError;
+	}
+
+	const { data: publicUrlData } = supabaseClient.storage
+		.from(IMAGE_BUCKET)
+		.getPublicUrl(storagePath);
+
+	if (!publicUrlData?.publicUrl) {
+		await supabaseClient.storage.from(IMAGE_BUCKET).remove([storagePath]);
+		throw new Error("Nem sikerült létrehozni az eseménykép nyilvános címét.");
+	}
+
+	return {
+		publicUrl: publicUrlData.publicUrl,
+		storagePath
+	};
+}
+
 function setEventPlaceCreatorOpen(isOpen) {
 	eventPlaceCreator.classList.toggle("hidden", !isOpen);
 	toggleEventPlaceCreatorButton.setAttribute("aria-expanded", String(isOpen));
-	if (isOpen) {
-		setTimeout(() => eventPlaceName.focus(), 50);
+
+	if (!isOpen) {
+		return;
 	}
+
+	initializeEventPlaceMap();
+	setTimeout(() => {
+		eventPlaceMap.invalidateSize();
+		const latitude = Number(eventPlaceLatitude.value);
+		const longitude = Number(eventPlaceLongitude.value);
+		if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+			updateEventPlaceMapPosition(latitude, longitude);
+		}
+		eventPlaceName.focus();
+	}, 80);
 }
 
 function resetEventPlaceCreator() {
@@ -715,6 +844,11 @@ function resetEventPlaceCreator() {
 	eventPlaceLongitude.value = "";
 	eventPlaceMessage.textContent = "";
 	eventPlaceMessage.className = "field-message";
+	if (eventPlaceMarker && eventPlaceMap) {
+		eventPlaceMap.removeLayer(eventPlaceMarker);
+		eventPlaceMarker = null;
+		eventPlaceMap.setView([47.1625, 19.5033], 7);
+	}
 	setEventPlaceCreatorOpen(false);
 }
 
@@ -744,6 +878,7 @@ async function findEventPlaceLocation() {
 		}
 		eventPlaceLatitude.value = result.latitude.toFixed(7);
 		eventPlaceLongitude.value = result.longitude.toFixed(7);
+		updateEventPlaceMapPosition(result.latitude, result.longitude);
 		eventPlaceMessage.textContent = `Találat: ${result.displayName}`;
 		eventPlaceMessage.className = "field-message success-text";
 	} catch (error) {
@@ -834,6 +969,8 @@ async function loadAdminEvents() {
 			recurrence_weekday,
 			place_id,
 			website,
+			image_url,
+			image_storage_path,
 			is_published,
 			created_at,
 			updated_at
@@ -921,6 +1058,10 @@ function resetEventForm() {
 	eventEditModeTitle.textContent = "";
 	eventSaveMessage.textContent = "";
 	eventSaveMessage.className = "message full-width";
+	clearEventImageSelection(false);
+	editingEventOriginalStoragePath = null;
+	editingEventOriginalImageUrl = "";
+	removeExistingEventImageOnSave = false;
 	resetEventPlaceCreator();
 	updateEventScheduleFields();
 }
@@ -941,6 +1082,11 @@ function startEditingEvent(eventId) {
 	eventPlaceId.value = event.place_id ? String(event.place_id) : "";
 	eventWebsite.value = event.website || "";
 	eventDescription.value = event.description || "";
+	editingEventOriginalStoragePath = event.image_storage_path || null;
+	editingEventOriginalImageUrl = event.image_url || "";
+	removeExistingEventImageOnSave = false;
+	clearEventImageSelection(false);
+	showEventImagePreview(editingEventOriginalImageUrl);
 	eventIsPublished.checked = Boolean(event.is_published);
 	saveEventButton.textContent = "Módosítások mentése";
 	cancelEventEditButton.classList.remove("hidden");
@@ -954,6 +1100,7 @@ function startEditingEvent(eventId) {
 }
 
 async function deleteEvent(eventId, eventTitle) {
+	const eventToDelete = adminEvents.find((item) => Number(item.id) === Number(eventId));
 	const confirmed = window.confirm(`Biztosan törlöd ezt az eseményt?
 
 ${eventTitle}`);
@@ -967,6 +1114,10 @@ ${eventTitle}`);
 		eventsListMessage.textContent = `Nem sikerült törölni: ${error.message}`;
 		eventsListMessage.className = "message error";
 		return;
+	}
+
+	if (eventToDelete?.image_storage_path) {
+		await deleteStoredImage(eventToDelete.image_storage_path);
 	}
 
 	if (Number(editingEventId) === Number(eventId)) {
@@ -1041,6 +1192,34 @@ async function saveEvent(event) {
 	}
 
 	const isEditing = editingEventId !== null;
+	let finalImageUrl = isEditing && !removeExistingEventImageOnSave ? editingEventOriginalImageUrl : "";
+	let finalStoragePath = isEditing && !removeExistingEventImageOnSave ? editingEventOriginalStoragePath : null;
+	let newlyUploadedStoragePath = null;
+	const selectedImage = eventImageFile.files?.[0];
+
+	if (selectedImage) {
+		saveEventButton.disabled = true;
+		saveEventButton.textContent = "Kép feltöltése...";
+		eventImageMessage.textContent = "Eseménykép tömörítése és feltöltése...";
+
+		try {
+			const uploadedImage = await uploadEventImage(selectedImage);
+			finalImageUrl = uploadedImage.publicUrl;
+			finalStoragePath = uploadedImage.storagePath;
+			newlyUploadedStoragePath = uploadedImage.storagePath;
+		} catch (error) {
+			console.error("Eseménykép feltöltési hiba:", error);
+			saveEventButton.disabled = false;
+			saveEventButton.textContent = isEditing ? "Módosítások mentése" : "Esemény mentése";
+			eventImageMessage.textContent = `Nem sikerült feltölteni a képet: ${error.message || "ismeretlen hiba"}`;
+			eventImageMessage.className = "field-message error-text";
+			return;
+		}
+	}
+
+	eventToSave.image_url = finalImageUrl || null;
+	eventToSave.image_storage_path = finalStoragePath;
+
 	saveEventButton.disabled = true;
 	saveEventButton.textContent = isEditing ? "Módosítások mentése..." : "Mentés...";
 
@@ -1051,10 +1230,17 @@ async function saveEvent(event) {
 	saveEventButton.disabled = false;
 	saveEventButton.textContent = isEditing ? "Módosítások mentése" : "Esemény mentése";
 	if (result.error) {
+		if (newlyUploadedStoragePath) {
+			await deleteStoredImage(newlyUploadedStoragePath);
+		}
 		console.error("Eseménymentési hiba:", result.error);
 		eventSaveMessage.textContent = `Nem sikerült elmenteni: ${result.error.message}`;
 		eventSaveMessage.className = "message error full-width";
 		return;
+	}
+
+	if (isEditing && editingEventOriginalStoragePath && editingEventOriginalStoragePath !== finalStoragePath) {
+		await deleteStoredImage(editingEventOriginalStoragePath);
 	}
 
 	const savedTitle = result.data?.[0]?.title || title;
@@ -1884,7 +2070,36 @@ eventPlaceCreator.addEventListener("keydown", (event) => {
 	}
 });
 findEventPlaceButton.addEventListener("click", findEventPlaceLocation);
+eventPlaceLatitude.addEventListener("change", () => {
+	updateEventPlaceMapPosition(eventPlaceLatitude.value, eventPlaceLongitude.value);
+});
+eventPlaceLongitude.addEventListener("change", () => {
+	updateEventPlaceMapPosition(eventPlaceLatitude.value, eventPlaceLongitude.value);
+});
 saveEventPlaceButton.addEventListener("click", saveEventPlace);
+eventImageFile.addEventListener("change", () => {
+	const file = eventImageFile.files?.[0];
+	eventImageMessage.textContent = "";
+	eventImageMessage.className = "field-message";
+
+	if (!file) {
+		showEventImagePreview(editingEventOriginalImageUrl);
+		return;
+	}
+
+	if (!file.type.startsWith("image/")) {
+		eventImageFile.value = "";
+		eventImageMessage.textContent = "A kiválasztott fájl nem kép.";
+		eventImageMessage.className = "field-message error-text";
+		return;
+	}
+
+	removeExistingEventImageOnSave = false;
+	showEventImagePreview(URL.createObjectURL(file));
+	eventImageMessage.textContent = `Kiválasztva: ${file.name}`;
+	eventImageMessage.className = "field-message success-text";
+});
+removeEventImageButton.addEventListener("click", () => clearEventImageSelection(true));
 eventsSearchInput.addEventListener("input", renderAdminEvents);
 refreshEventsButton.addEventListener("click", loadAdminEvents);
 clearEventFormButton.addEventListener("click", () => {

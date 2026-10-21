@@ -320,7 +320,8 @@ async function loadEvents() {
 			recurrence_ordinal,
 			recurrence_weekday,
 			place_id,
-			website
+			website,
+			image_url
 		`)
 		.eq("is_published", true)
 		.order("title", { ascending: true });
@@ -341,7 +342,8 @@ async function loadEvents() {
 				? null
 				: Number(event.recurrence_weekday),
 			placeId: event.place_id ? Number(event.place_id) : null,
-			website: event.website || ""
+			website: event.website || "",
+			image: event.image_url || ""
 		}));
 	}
 
@@ -539,6 +541,10 @@ function clearEventFocusMarker() {
 function showEventFocusMarker(event, place) {
 	clearEventFocusMarker();
 	activeEventId = event.id;
+
+	if (!place) {
+		return;
+	}
 
 	L.marker([place.latitude, place.longitude], {
 		icon: getEventMarkerIcon(),
@@ -765,7 +771,7 @@ function renderEventCards(target) {
 
 			return `
 				<article class="event-card">
-					<button class="event-card-main" type="button" data-event-focus-id="${event.id}" ${place ? "" : "disabled"}>
+					<button class="event-card-main" type="button" data-event-focus-id="${event.id}">
 						${getEventDateBadge(event)}
 						<div class="event-card-copy">
 							<div class="event-card-meta">
@@ -794,19 +800,118 @@ function renderMonthlyEvents() {
 	renderEventCards(mobileEventsList);
 }
 
-function focusEvent(eventId) {
-	const event = monthlyEvents.find((item) => item.id === Number(eventId));
-	const place = event ? getPlaceById(event.placeId) : null;
-	if (!event || !place) {
+function getEventDetailsDateHtml(event) {
+	if (event.recurrenceType === "monthly_rule") {
+		const rule = getMonthlyRuleLabel(event.recurrenceOrdinal, event.recurrenceWeekday);
+		const occurrence = event.occurrenceDate ? formatOccurrenceDate(event.occurrenceDate) : "";
+		return `
+			<p>${escapeHtml(rule)}</p>
+			${occurrence ? `<span class="event-detail-occurrence">Ebben a hónapban: ${escapeHtml(occurrence)}</span>` : ""}
+		`;
+	}
+
+	return `<p>${escapeHtml(getMonthRangeLabel(event.startMonth, event.endMonth || event.startMonth))}</p>`;
+}
+
+function openEventDetails(event, place = null) {
+	if (!event) {
 		return;
 	}
 
+	setSelectedMarker(null);
+	setMobileMenuOpen(false);
+	setDesktopEventsOpen(false);
+
+	detailsPanel.dataset.placeId = "";
+	detailsPanel.dataset.eventId = String(event.id);
+	detailsPanel.classList.add("open");
+	detailsPanel.setAttribute("aria-hidden", "false");
+
+	if (isMobilePortrait()) {
+		detailsPanel.classList.remove("expanded");
+		detailsSheetProgress = 0;
+		detailsBackdrop.classList.remove("open");
+		detailsBackdrop.setAttribute("aria-hidden", "true");
+	}
+
+	const eventImage = event.image
+		? `<img class="place-image event-detail-image" src="${escapeHtml(event.image)}" alt="${escapeHtml(event.title)}">`
+		: "";
+	const summaryClass = event.image ? "has-image" : "no-image";
+	const cityLabel = place?.city || "Esemény";
+	const placeHtml = place
+		? `
+			<section class="info-block">
+				<h3>Helyszín</h3>
+				<p><strong>${escapeHtml(place.name)}</strong><br>${escapeHtml(place.address || place.city || "")}</p>
+			</section>
+		`
+		: `
+			<section class="info-block">
+				<h3>Helyszín</h3>
+				<p>Nincs térképes hely kapcsolva ehhez az eseményhez.</p>
+			</section>
+		`;
+	const descriptionHtml = event.description
+		? `
+			<section class="info-block">
+				<h3>Leírás</h3>
+				<p>${escapeHtml(event.description)}</p>
+			</section>
+		`
+		: "";
+	const websiteHtml = event.website
+		? `
+			<section class="info-block">
+				<h3>Weboldal</h3>
+				<a class="website-link" href="${escapeHtml(event.website)}" target="_blank" rel="noopener noreferrer">Esemény weboldala ↗</a>
+			</section>
+		`
+		: "";
+
+	detailsContent.innerHTML = `
+		<div class="details-summary event-details-summary ${summaryClass}">
+			${eventImage}
+			<div class="details-summary-text">
+				<span class="details-city">${escapeHtml(cityLabel)}</span>
+				<h2>${escapeHtml(event.title)}</h2>
+				<div class="category-list">
+					<span class="category-tag event-tag">Esemény</span>
+					<span class="category-tag">${escapeHtml(getEventDateLabel(event))}</span>
+				</div>
+			</div>
+		</div>
+
+		<div class="details-full-content event-details-content">
+			<section class="info-block">
+				<h3>Időpont</h3>
+				${getEventDetailsDateHtml(event)}
+			</section>
+			${placeHtml}
+			${descriptionHtml}
+			${websiteHtml}
+		</div>
+	`;
+
+	if (!place) {
+		return;
+	}
+
+	map.setView([place.latitude, place.longitude], Math.max(map.getZoom(), 15), { animate: true });
+}
+
+function focusEvent(eventId) {
+	const event = monthlyEvents.find((item) => item.id === Number(eventId));
+	if (!event) {
+		return;
+	}
+
+	const place = getPlaceById(event.placeId);
 	setMobileMenuOpen(false);
 	setListOpen(false);
 	setDesktopEventsOpen(false);
 	showEventFocusMarker(event, place);
-	map.setView([place.latitude, place.longitude], Math.max(map.getZoom(), 15), { animate: true });
-	openPlaceDetails(place.id, { preserveEventMarker: true, panMap: false });
+	openEventDetails(event, place);
 }
 
 function setDesktopEventsOpen(isOpen) {
@@ -954,6 +1059,7 @@ function openPlaceDetails(placeId, options = {}) {
 	setDesktopEventsOpen(false);
 
 	detailsPanel.dataset.placeId = String(place.id);
+	detailsPanel.dataset.eventId = "";
 	detailsPanel.classList.add("open");
 	detailsPanel.setAttribute("aria-hidden", "false");
 
@@ -1029,7 +1135,9 @@ function closePlaceDetails() {
 	detailsBackdrop.classList.remove("open");
 	detailsBackdrop.setAttribute("aria-hidden", "true");
 	detailsPanel.dataset.placeId = "";
+	detailsPanel.dataset.eventId = "";
 	setSelectedMarker(null);
+	clearEventFocusMarker();
 
 	if (detailsPanel.contains(document.activeElement) && document.activeElement instanceof HTMLElement) {
 		document.activeElement.blur();

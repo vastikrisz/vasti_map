@@ -19,3 +19,9 @@ Fő funkciók
 Supabase
 --------
 A frissített supabase-events.sql egyszeri futtatása szükséges az eseményrendszer új mezőihez és az eseményhelyszínekhez. A fájl meglévő events tábla esetén migrációként is futtatható.
+
+Eseményrendszer v3:
+- Az eseményekhez külön kép tölthető fel; ez csak az esemény részleteinek megnyitásakor látszik.
+- Az eseményre kattintva eseményspecifikus adatlap nyílik meg, nem a kapcsolt hely normál adatlapja.
+- Új eseményhelyszín felvételekor külön Leaflet térképes pozíció-előnézet használható.
+- A frissített supabase-events.sql fájlt a meglévő projektben is újra le kell futtatni az eseménykép mezők hozzáadásához.
