@@ -25,3 +25,9 @@ Eseményrendszer v3:
 - Az eseményre kattintva eseményspecifikus adatlap nyílik meg, nem a kapcsolt hely normál adatlapja.
 - Új eseményhelyszín felvételekor külön Leaflet térképes pozíció-előnézet használható.
 - A frissített supabase-events.sql fájlt a meglévő projektben is újra le kell futtatni az eseménykép mezők hozzáadásához.
+
+Új belépési funkciók:
+- A helyek külön "Ingyenesen látogatható" jelölést kaphatnak az adminban.
+- A publikus térképen és listában külön Ingyenes szűrő használható a kategóriákkal együtt.
+- A múzeumhoz kapcsolt események a jegyinformációnál ingyenes látogatási alkalomként jelennek meg.
+- A havi szabályos események aktuális havi dátumát a rendszer automatikusan kiszámolja.

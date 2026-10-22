@@ -60,6 +60,7 @@ const ticketInfoInput = document.getElementById("ticketInfo");
 const openingHoursInput = document.getElementById("openingHours");
 const categoryOneInput = document.getElementById("categoryOne");
 const categoryTwoInput = document.getElementById("categoryTwo");
+const isFreeInput = document.getElementById("isFree");
 
 // Events
 const eventsAdminView = document.getElementById("eventsAdminView");
@@ -177,6 +178,7 @@ async function loadAdminPlaces() {
 				opening_hours,
 				categories,
 				price_level,
+				is_free,
 				image_urls,
 				image_storage_path,
 				is_published,
@@ -251,6 +253,9 @@ function renderAdminPlaces() {
 						Piszkozat
 					</span>
 				`;
+			const freeHtml = place.is_free
+				? `<span class="place-status free">Ingyenes</span>`
+				: "";
 			return `
 				<article class="place-list-item">
 					<div class="place-list-content">
@@ -264,6 +269,7 @@ function renderAdminPlaces() {
 
 						<div class="place-list-meta">
 							${statusHtml}
+							${freeHtml}
 							${categoryHtml}
 						</div>
 					</div>
@@ -335,6 +341,7 @@ function startEditingPlace(placeId) {
 		.forEach((input) => {
 			input.checked = input.value === selectedPriceLevel;
 		});
+	isFreeInput.checked = Boolean(place.is_free);
 	isPublishedInput.checked = Boolean(place.is_published);
 	savePlaceButton.textContent = "Módosítások mentése";
 	cancelEditButton.classList.remove("hidden");
@@ -474,6 +481,7 @@ async function savePlace(event) {
 	const categoryOne = String(formData.get("categoryOne") || "").trim();
 	const categoryTwo = String(formData.get("categoryTwo") || "").trim();
 	const priceLevel = String(formData.get("priceLevel") || "").trim();
+	const isFree = formData.get("isFree") === "on";
 	const imageUrl = String(formData.get("imageUrl") || "").trim();
 	const selectedImageFile = imageFileInput.files?.[0] || null;
 	const isPublished = formData.get("isPublished") === "on";
@@ -556,6 +564,7 @@ async function savePlace(event) {
 		opening_hours: openingHours || null,
 		categories,
 		price_level: priceLevel || null,
+		is_free: isFree,
 		image_urls: finalImageUrl
 			? [finalImageUrl]
 			: [],
@@ -927,6 +936,7 @@ async function saveEventPlace() {
 			opening_hours: null,
 			categories: ["Eseményhelyszín"],
 			price_level: null,
+			is_free: false,
 			image_urls: [],
 			image_storage_path: null,
 			is_published: true,
@@ -1960,6 +1970,7 @@ function resetPlaceForm() {
 	editingOriginalStoragePath = null;
 	editingOriginalImageUrl = "";
 	removeExistingImageOnSave = false;
+	isFreeInput.checked = false;
 	isPublishedInput.checked = true;
 	savePlaceButton.textContent = "Nevezetesség mentése";
 	cancelEditButton.classList.add("hidden");

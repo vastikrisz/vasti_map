@@ -1823,3 +1823,115 @@ body.list-open .filter-panel {
 		height: 112px;
 	}
 }
+
+/* Free entry */
+.free-filter-button {
+	gap: 6px;
+}
+
+.free-filter-button span {
+	font-size: 12px;
+	font-weight: 900;
+}
+
+.free-filter-button.active {
+	border-color: rgba(34, 197, 94, 0.55);
+	background: rgba(34, 197, 94, 0.16);
+	color: #bbf7d0;
+}
+
+.list-place-meta {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 7px;
+}
+
+.list-free-badge {
+	display: inline-flex;
+	align-items: center;
+	border: 1px solid rgba(34, 197, 94, 0.25);
+	border-radius: 999px;
+	padding: 3px 7px;
+	background: rgba(34, 197, 94, 0.11);
+	color: #86efac;
+	font-size: 10px;
+	font-weight: 800;
+}
+
+.ticket-info-block > p + .free-entry-card,
+.ticket-info-block > .free-entry-card + .free-entry-card {
+	margin-top: 12px;
+}
+
+.free-entry-card {
+	display: grid;
+	grid-template-columns: 34px minmax(0, 1fr);
+	gap: 10px;
+	align-items: start;
+	border: 1px solid rgba(34, 197, 94, 0.19);
+	border-radius: 12px;
+	padding: 11px 12px;
+	background: linear-gradient(135deg, rgba(34, 197, 94, 0.10), rgba(16, 185, 129, 0.05));
+}
+
+.free-entry-card.scheduled {
+	border-color: rgba(96, 165, 250, 0.20);
+	background: linear-gradient(135deg, rgba(37, 99, 235, 0.11), rgba(14, 165, 233, 0.05));
+}
+
+.free-entry-icon {
+	display: grid;
+	place-items: center;
+	width: 34px;
+	height: 34px;
+	border-radius: 10px;
+	background: rgba(34, 197, 94, 0.14);
+	color: #86efac;
+	font-size: 15px;
+	font-weight: 900;
+}
+
+.free-entry-card.scheduled .free-entry-icon {
+	background: rgba(59, 130, 246, 0.14);
+	color: #93c5fd;
+}
+
+.free-entry-card strong,
+.free-entry-card span {
+	display: block;
+}
+
+.free-entry-card strong {
+	margin-bottom: 3px;
+	color: #e6f7ec;
+	font-size: 12px;
+}
+
+.free-entry-card.scheduled strong {
+	color: #dbeafe;
+}
+
+.free-entry-card span {
+	color: #9fb0c2;
+	font-size: 12px;
+	line-height: 1.45;
+}
+
+.free-entry-card .free-entry-date {
+	margin-top: 4px;
+	color: #bfdbfe;
+	font-weight: 750;
+}
+
+@media (max-width: 768px) {
+	.free-entry-card {
+		grid-template-columns: 32px minmax(0, 1fr);
+		padding: 10px;
+	}
+
+	.free-entry-icon {
+		width: 32px;
+		height: 32px;
+	}
+}

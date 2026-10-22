@@ -59,6 +59,7 @@ let detailsSheetProgress = 0;
 
 const selectedCategories = new Set();
 const selectedPriceLevels = new Set();
+let freeOnly = false;
 const markerByPlaceId = new Map();
 
 // Map
@@ -263,6 +264,7 @@ async function loadPlaces() {
 			opening_hours,
 			categories,
 			price_level,
+			is_free,
 			image_urls,
 			is_event_only
 		`)
@@ -291,6 +293,7 @@ async function loadPlaces() {
 			openingHours: place.opening_hours || "Nincs megadva nyitvatartás.",
 			categories,
 			priceLevel: place.price_level || null,
+			isFree: Boolean(place.is_free),
 			image: imageUrls[0] || "",
 			isEventOnly: Boolean(place.is_event_only),
 			searchText: [place.name, place.address, place.city, ...categories]
@@ -381,12 +384,20 @@ function isFoodPlace(place) {
 	return place.categories.includes("Kajálda");
 }
 
+function isMuseumPlace(place) {
+	return place.categories.includes("Múzeum");
+}
+
 function getVisiblePlaces() {
 	return getBrowseablePlaces().filter((place) => {
 		const categoryMatches = selectedCategories.size === 0 ||
 			place.categories.some((category) => selectedCategories.has(category));
 
 		if (!categoryMatches) {
+			return false;
+		}
+
+		if (freeOnly && !place.isFree) {
 			return false;
 		}
 
@@ -407,6 +418,10 @@ function syncFilterControls() {
 		button.classList.toggle("active", selectedPriceLevels.has(button.dataset.priceLevel));
 	});
 
+	document.querySelectorAll("[data-free-filter]").forEach((button) => {
+		button.classList.toggle("active", freeOnly);
+	});
+
 	const foodSelected = selectedCategories.has("Kajálda");
 	priceFilterSection.classList.toggle("hidden", !foodSelected);
 	listPriceFilterSection.classList.toggle("hidden", !foodSelected);
@@ -418,7 +433,7 @@ function syncFilterControls() {
 		});
 	}
 
-	const filterCount = selectedCategories.size + selectedPriceLevels.size;
+	const filterCount = selectedCategories.size + selectedPriceLevels.size + (freeOnly ? 1 : 0);
 	activeFilterCount.textContent = filterCount ? `${filterCount} aktív` : "Mind";
 }
 
@@ -448,9 +463,15 @@ function togglePriceLevel(priceLevel) {
 	applyFilters();
 }
 
+function toggleFreeOnly() {
+	freeOnly = !freeOnly;
+	applyFilters();
+}
+
 function clearActiveFilters() {
 	selectedCategories.clear();
 	selectedPriceLevels.clear();
+	freeOnly = false;
 	applyFilters();
 }
 
@@ -590,6 +611,7 @@ function selectPlaceFromSearch(placeId) {
 
 	selectedCategories.clear();
 	selectedPriceLevels.clear();
+	freeOnly = false;
 	placeSearchInput.value = place.name;
 	placeSearchResults.innerHTML = "";
 	placeSearchResults.classList.add("hidden");
@@ -633,6 +655,7 @@ function renderPlaceList() {
 			const image = place.image
 				? `<img src="${escapeHtml(place.image)}" alt="" loading="lazy">`
 				: `<div class="list-place-placeholder">${escapeHtml((CATEGORY_MARKER_CONFIG[category] || DEFAULT_MARKER_CONFIG).symbol)}</div>`;
+			const freeBadge = place.isFree ? `<span class="list-free-badge">Ingyenes</span>` : "";
 
 			return `
 				<button class="list-place-card" type="button" data-list-place-id="${place.id}">
@@ -640,7 +663,10 @@ function renderPlaceList() {
 					<div class="list-place-copy">
 						<strong>${escapeHtml(place.name)}</strong>
 						<span>${escapeHtml(place.city || place.address)}</span>
-						<small>${escapeHtml(category)}</small>
+						<div class="list-place-meta">
+							<small>${escapeHtml(category)}</small>
+							${freeBadge}
+						</div>
 					</div>
 					<span class="list-place-arrow">›</span>
 				</button>
@@ -1043,6 +1069,79 @@ function getPlaceImageHtml(place) {
 	return `<img class="place-image" src="${escapeHtml(place.image)}" alt="${escapeHtml(place.name)}">`;
 }
 
+function getPlaceFreeEvents(place, referenceDate = new Date()) {
+	if (!isMuseumPlace(place)) {
+		return [];
+	}
+
+	const monthNumber = referenceDate.getMonth() + 1;
+	return events
+		.filter((event) => Number(event.placeId) === Number(place.id))
+		.map((event) => {
+			if (event.recurrenceType === "monthly_rule") {
+				const occurrenceDate = getNthWeekdayDate(
+					referenceDate.getFullYear(),
+					referenceDate.getMonth(),
+					event.recurrenceOrdinal,
+					event.recurrenceWeekday
+				);
+
+				return occurrenceDate ? { ...event, occurrenceDate } : null;
+			}
+
+			if (event.startMonth && monthRangeContains(monthNumber, event.startMonth, event.endMonth)) {
+				return { ...event, occurrenceDate: null };
+			}
+
+			return null;
+		})
+		.filter(Boolean);
+}
+
+function getFreeEntryHtml(place) {
+	const blocks = [];
+
+	if (place.isFree) {
+		return `
+			<div class="free-entry-card permanent">
+				<div class="free-entry-icon" aria-hidden="true">✓</div>
+				<div>
+					<strong>Ingyenes belépés</strong>
+					<span>A hely ingyenesen látogatható.</span>
+				</div>
+			</div>
+		`;
+	}
+
+	getPlaceFreeEvents(place).forEach((event) => {
+		if (event.recurrenceType === "monthly_rule" && event.occurrenceDate) {
+			blocks.push(`
+				<div class="free-entry-card scheduled">
+					<div class="free-entry-icon" aria-hidden="true">◷</div>
+					<div>
+						<strong>Ingyenes látogatási nap</strong>
+						<span>${escapeHtml(getMonthlyRuleLabel(event.recurrenceOrdinal, event.recurrenceWeekday))}.</span>
+						<span class="free-entry-date">Ebben a hónapban: ${escapeHtml(formatOccurrenceDate(event.occurrenceDate))}.</span>
+					</div>
+				</div>
+			`);
+			return;
+		}
+
+		blocks.push(`
+			<div class="free-entry-card scheduled">
+				<div class="free-entry-icon" aria-hidden="true">◷</div>
+				<div>
+					<strong>Ingyenes látogatási időszak</strong>
+					<span>${escapeHtml(getMonthRangeLabel(event.startMonth, event.endMonth || event.startMonth))}.</span>
+				</div>
+			</div>
+		`);
+	});
+
+	return blocks.join("");
+}
+
 function openPlaceDetails(placeId, options = {}) {
 	const place = getPlaceById(placeId);
 	if (!place) {
@@ -1076,6 +1175,12 @@ function openPlaceDetails(placeId, options = {}) {
 	const priceHtml = isFoodPlace(place) && place.priceLevel
 		? `<span class="price-badge ${place.priceLevel}">${place.priceLevel === "cheap" ? "Olcsó" : "Drága"}</span>`
 		: "";
+	const freeEntryHtml = getFreeEntryHtml(place);
+	const ticketInfoHtml = place.ticketInfo && place.ticketInfo !== "Nincs megadva jegyinformáció."
+		? `<p>${escapeHtml(place.ticketInfo)}</p>`
+		: !freeEntryHtml
+			? `<p>Nincs megadva jegyinformáció.</p>`
+			: "";
 	const websiteHtml = place.website
 		? `
 			<section class="info-block">
@@ -1108,9 +1213,10 @@ function openPlaceDetails(placeId, options = {}) {
 				<p>${escapeHtml(place.description)}</p>
 			</section>
 
-			<section class="info-block">
+			<section class="info-block ticket-info-block">
 				<h3>Jegyinformáció</h3>
-				<p>${escapeHtml(place.ticketInfo)}</p>
+				${ticketInfoHtml}
+				${freeEntryHtml}
 			</section>
 
 			<section class="info-block">
@@ -1330,6 +1436,11 @@ function handleFilterClick(event) {
 	const priceButton = event.target.closest("[data-price-level]");
 	if (priceButton) {
 		togglePriceLevel(priceButton.dataset.priceLevel);
+		return;
+	}
+
+	if (event.target.closest("[data-free-filter]")) {
+		toggleFreeOnly();
 	}
 }
 
