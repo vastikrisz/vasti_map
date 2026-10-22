@@ -44,6 +44,7 @@ const WEEKDAY_RULE_NAMES = {
 let places = [];
 let events = [];
 let monthlyEvents = [];
+let upcomingEvents = [];
 let allCategories = [];
 let selectedMarkerId = null;
 let activeEventId = null;
@@ -61,6 +62,7 @@ const selectedCategories = new Set();
 const selectedPriceLevels = new Set();
 let freeOnly = false;
 const markerByPlaceId = new Map();
+const visibleMarkerIds = new Set();
 
 // Map
 const map = L.map("map", {
@@ -108,6 +110,9 @@ const placeSearchResults = document.getElementById("placeSearchResults");
 const categoryFilters = document.getElementById("categoryFilters");
 const listCategoryFilters = document.getElementById("listCategoryFilters");
 const activeFilterCount = document.getElementById("activeFilterCount");
+const filterResultsCount = document.getElementById("filterResultsCount");
+const activeFilterChips = document.getElementById("activeFilterChips");
+const listActiveFilterChips = document.getElementById("listActiveFilterChips");
 const priceFilterSection = document.getElementById("priceFilterSection");
 const listPriceFilterSection = document.getElementById("listPriceFilterSection");
 const resetFiltersButton = document.getElementById("resetFiltersButton");
@@ -119,6 +124,7 @@ const mobileSearchButton = document.getElementById("mobileSearchButton");
 const mobileListButton = document.getElementById("mobileListButton");
 const mobileMenuButton = document.getElementById("mobileMenuButton");
 const mobileShowMapButton = document.getElementById("mobileShowMapButton");
+const landscapeMenuTabs = document.querySelectorAll("[data-landscape-menu-tab]");
 const uiBackdrop = document.getElementById("uiBackdrop");
 
 const listPanel = document.getElementById("listPanel");
@@ -142,6 +148,9 @@ const imageLightbox = document.getElementById("imageLightbox");
 const imageLightboxImage = document.getElementById("imageLightboxImage");
 const imageLightboxClose = document.getElementById("imageLightboxClose");
 const appVersionElements = document.querySelectorAll(".app-version");
+const mapEmptyState = document.getElementById("mapEmptyState");
+const mapEmptyResetButton = document.getElementById("mapEmptyResetButton");
+const loadingSkeleton = document.getElementById("loadingSkeleton");
 
 // Helpers
 function escapeHtml(value) {
@@ -167,6 +176,22 @@ function isMobileLandscape() {
 
 function isMobilePortrait() {
 	return isMobile() && !isMobileLandscape();
+}
+
+function updateVisualViewport() {
+	const viewportHeight = Math.round(window.visualViewport?.height || window.innerHeight);
+	document.documentElement.style.setProperty("--visual-viewport-height", `${viewportHeight}px`);
+}
+
+function setLandscapeMenuTab(tab) {
+	const activeTab = tab === "events" ? "events" : "filters";
+	filterPanel.dataset.landscapeTab = activeTab;
+
+	landscapeMenuTabs.forEach((button) => {
+		const isActive = button.dataset.landscapeMenuTab === activeTab;
+		button.classList.toggle("active", isActive);
+		button.setAttribute("aria-selected", String(isActive));
+	});
 }
 
 function getMonthName(month) {
@@ -205,10 +230,27 @@ function getNthWeekdayDate(year, monthIndex, ordinal, weekday) {
 }
 
 function formatOccurrenceDate(date) {
-	return new Intl.DateTimeFormat("hu-HU", {
+	const label = new Intl.DateTimeFormat("hu-HU", {
 		month: "long",
 		day: "numeric"
 	}).format(date);
+
+	return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function startOfDay(date) {
+	return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function getDaysUntil(date, referenceDate = new Date()) {
+	const millisecondsPerDay = 24 * 60 * 60 * 1000;
+	return Math.round((startOfDay(date) - startOfDay(referenceDate)) / millisecondsPerDay);
+}
+
+function addDays(date, days) {
+	const result = startOfDay(date);
+	result.setDate(result.getDate() + days);
+	return result;
 }
 
 function getMonthlyRuleLabel(ordinal, weekday) {
@@ -437,10 +479,64 @@ function syncFilterControls() {
 	activeFilterCount.textContent = filterCount ? `${filterCount} aktív` : "Mind";
 }
 
+function getActiveFilterItems() {
+	const filters = [...selectedCategories].map((category) => ({
+		type: "category",
+		value: category,
+		label: category
+	}));
+
+	selectedPriceLevels.forEach((priceLevel) => {
+		filters.push({
+			type: "price",
+			value: priceLevel,
+			label: priceLevel === "cheap" ? "Olcsó" : "Drága"
+		});
+	});
+
+	if (freeOnly) {
+		filters.push({ type: "free", value: "true", label: "Ingyenes" });
+	}
+
+	return filters;
+}
+
+function renderActiveFilterChips() {
+	const filters = getActiveFilterItems();
+	const html = filters
+		.map((filter) => `
+			<button
+				class="filter-chip"
+				type="button"
+				data-filter-chip-type="${filter.type}"
+				data-filter-chip-value="${escapeHtml(filter.value)}"
+			>
+				<span>${escapeHtml(filter.label)}</span>
+				<strong aria-hidden="true">×</strong>
+			</button>
+		`)
+		.join("");
+
+	activeFilterChips.innerHTML = html;
+	listActiveFilterChips.innerHTML = html;
+	activeFilterChips.classList.toggle("hidden", filters.length === 0);
+	listActiveFilterChips.classList.toggle("hidden", filters.length === 0);
+}
+
+function updateResultSummary() {
+	const visibleCount = getVisiblePlaces().length;
+	const label = `${visibleCount} hely`;
+
+	filterResultsCount.textContent = label;
+	mapEmptyState.classList.toggle("hidden", visibleCount !== 0);
+}
+
 function applyFilters() {
 	syncFilterControls();
+	renderActiveFilterChips();
 	renderMarkers();
 	renderPlaceList();
+	updateResultSummary();
 }
 
 function toggleCategory(category) {
@@ -472,6 +568,18 @@ function clearActiveFilters() {
 	selectedCategories.clear();
 	selectedPriceLevels.clear();
 	freeOnly = false;
+	applyFilters();
+}
+
+function removeFilterChip(type, value) {
+	if (type === "category") {
+		selectedCategories.delete(value);
+	} else if (type === "price") {
+		selectedPriceLevels.delete(value);
+	} else if (type === "free") {
+		freeOnly = false;
+	}
+
 	applyFilters();
 }
 
@@ -527,16 +635,39 @@ function buildPlaceMarkers() {
 
 function renderMarkers() {
 	const visiblePlaces = getVisiblePlaces();
-	const visibleIds = new Set(visiblePlaces.map((place) => place.id));
-	const markers = visiblePlaces
-		.map((place) => markerByPlaceId.get(place.id))
-		.filter(Boolean);
+	const nextVisibleIds = new Set(visiblePlaces.map((place) => place.id));
+	const markersToAdd = [];
 
-	markerLayer.clearLayers();
-	markerLayer.addLayers(markers);
+	visibleMarkerIds.forEach((placeId) => {
+		if (nextVisibleIds.has(placeId)) {
+			return;
+		}
+
+		const marker = markerByPlaceId.get(placeId);
+		if (marker) {
+			markerLayer.removeLayer(marker);
+		}
+		visibleMarkerIds.delete(placeId);
+	});
+
+	visiblePlaces.forEach((place) => {
+		if (visibleMarkerIds.has(place.id)) {
+			return;
+		}
+
+		const marker = markerByPlaceId.get(place.id);
+		if (marker) {
+			markersToAdd.push(marker);
+			visibleMarkerIds.add(place.id);
+		}
+	});
+
+	if (markersToAdd.length > 0) {
+		markerLayer.addLayers(markersToAdd);
+	}
 
 	const openPlaceId = Number(detailsPanel.dataset.placeId || 0);
-	if (openPlaceId && !visibleIds.has(openPlaceId) && !activeEventId) {
+	if (openPlaceId && !nextVisibleIds.has(openPlaceId) && !activeEventId) {
 		closePlaceDetails();
 	}
 
@@ -545,12 +676,16 @@ function renderMarkers() {
 
 function setSelectedMarker(placeId) {
 	if (selectedMarkerId) {
-		markerByPlaceId.get(selectedMarkerId)?.getElement()?.classList.remove("is-selected");
+		const previousMarker = markerByPlaceId.get(selectedMarkerId);
+		previousMarker?.getElement()?.classList.remove("is-selected");
+		previousMarker?.setZIndexOffset(0);
 	}
 
 	selectedMarkerId = placeId ? Number(placeId) : null;
 	if (selectedMarkerId) {
-		markerByPlaceId.get(selectedMarkerId)?.getElement()?.classList.add("is-selected");
+		const selectedMarker = markerByPlaceId.get(selectedMarkerId);
+		selectedMarker?.getElement()?.classList.add("is-selected");
+		selectedMarker?.setZIndexOffset(1200);
 	}
 }
 
@@ -701,6 +836,7 @@ function getMonthlyEvents(referenceDate) {
 	const year = referenceDate.getFullYear();
 	const monthIndex = referenceDate.getMonth();
 	const monthNumber = monthIndex + 1;
+	const today = startOfDay(referenceDate);
 	const occurrences = [];
 
 	events.forEach((event) => {
@@ -711,7 +847,7 @@ function getMonthlyEvents(referenceDate) {
 				event.recurrenceOrdinal,
 				event.recurrenceWeekday
 			);
-			if (!occurrenceDate) {
+			if (!occurrenceDate || startOfDay(occurrenceDate) < today) {
 				return;
 			}
 
@@ -734,7 +870,72 @@ function getMonthlyEvents(referenceDate) {
 		});
 	});
 
-	return occurrences.sort((a, b) => a.sortDay - b.sortDay || a.title.localeCompare(b.title, "hu"));
+	return occurrences.sort((a, b) => {
+		if (a.recurrenceType !== b.recurrenceType) {
+			return a.recurrenceType === "yearly" ? -1 : 1;
+		}
+		return a.sortDay - b.sortDay || a.title.localeCompare(b.title, "hu");
+	});
+}
+
+function getUpcomingRecurringEvents(referenceDate = new Date(), daysAhead = 5) {
+	const today = startOfDay(referenceDate);
+	const lastDay = addDays(today, daysAhead);
+	const upcoming = [];
+
+	events.forEach((event) => {
+		if (event.recurrenceType !== "monthly_rule") {
+			return;
+		}
+
+		for (let monthOffset = 0; monthOffset <= 1; monthOffset += 1) {
+			const monthAnchor = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
+			const occurrenceDate = getNthWeekdayDate(
+				monthAnchor.getFullYear(),
+				monthAnchor.getMonth(),
+				event.recurrenceOrdinal,
+				event.recurrenceWeekday
+			);
+
+			if (!occurrenceDate) {
+				continue;
+			}
+
+			const occurrenceDay = startOfDay(occurrenceDate);
+			if (occurrenceDay < today || occurrenceDay > lastDay) {
+				continue;
+			}
+
+			upcoming.push({
+				...event,
+				occurrenceDate,
+				sortDay: occurrenceDate.getDate(),
+				isUpcoming: true
+			});
+		}
+	});
+
+	return upcoming.sort((a, b) => a.occurrenceDate - b.occurrenceDate || a.title.localeCompare(b.title, "hu"));
+}
+
+function hasPastMonthlyOccurrences(referenceDate = new Date()) {
+	const year = referenceDate.getFullYear();
+	const monthIndex = referenceDate.getMonth();
+	const today = startOfDay(referenceDate);
+
+	return events.some((event) => {
+		if (event.recurrenceType !== "monthly_rule") {
+			return false;
+		}
+
+		const occurrenceDate = getNthWeekdayDate(
+			year,
+			monthIndex,
+			event.recurrenceOrdinal,
+			event.recurrenceWeekday
+		);
+		return occurrenceDate && startOfDay(occurrenceDate) < today;
+	});
 }
 
 function getEventDateLabel(event) {
@@ -755,10 +956,28 @@ function getEventRuleText(event) {
 	return getMonthlyRuleLabel(event.recurrenceOrdinal, event.recurrenceWeekday);
 }
 
+function getEventTimingBadge(event) {
+	if (event.recurrenceType !== "monthly_rule" || !event.occurrenceDate) {
+		return "";
+	}
+
+	const daysUntil = getDaysUntil(event.occurrenceDate);
+	if (daysUntil === 0) {
+		return `<span class="event-timing-badge today">Ma</span>`;
+	}
+	if (daysUntil === 1) {
+		return `<span class="event-timing-badge soon">Holnap</span>`;
+	}
+	if (daysUntil <= 5) {
+		return `<span class="event-timing-badge soon">Hamarosan</span>`;
+	}
+	return "";
+}
+
 function getEventDateBadge(event) {
 	if (event.recurrenceType === "monthly_rule" && event.occurrenceDate) {
 		return `
-			<div class="event-date-badge">
+			<div class="event-date-badge monthly">
 				<strong>${event.occurrenceDate.getDate()}</strong>
 				<span>${new Intl.DateTimeFormat("hu-HU", { month: "short" }).format(event.occurrenceDate)}</span>
 			</div>
@@ -774,56 +993,126 @@ function getEventDateBadge(event) {
 	`;
 }
 
-function renderEventCards(target) {
-	if (monthlyEvents.length === 0) {
-		target.innerHTML = `
-			<div class="panel-empty-state small">
-				<strong>Nincs esemény ebben a hónapban.</strong>
+function getEventCardHtml(event) {
+	const place = getPlaceById(event.placeId);
+	const placeLabel = place ? place.name : "Helyszín nélkül";
+	const description = event.description ? `<p>${escapeHtml(event.description)}</p>` : "";
+	const ruleText = getEventRuleText(event);
+	const ruleHtml = ruleText ? `<span class="event-rule-text">${escapeHtml(ruleText)}</span>` : "";
+	const locationHint = place
+		? `<span class="event-place">📍 ${escapeHtml(placeLabel)}</span>`
+		: `<span class="event-place muted">Nincs térképes hely kapcsolva</span>`;
+	const timingBadge = getEventTimingBadge(event);
+	const typeClass = event.recurrenceType === "monthly_rule" ? "monthly" : "annual";
+
+	return `
+		<article class="event-card ${typeClass}">
+			<button class="event-card-main" type="button" data-event-focus-id="${event.id}">
+				${getEventDateBadge(event)}
+				<div class="event-card-copy">
+					<div class="event-card-meta">
+						<span>${escapeHtml(getEventDateLabel(event))}</span>
+						<span class="event-repeat-badge">${getEventRecurrenceLabel(event)}</span>
+						${timingBadge}
+					</div>
+					<h4>${escapeHtml(event.title)}</h4>
+					${ruleHtml}
+					${description}
+					${locationHint}
+				</div>
+			</button>
+			${event.website ? `<a class="event-link" href="${escapeHtml(event.website)}" target="_blank" rel="noopener noreferrer">Weboldal ↗</a>` : ""}
+		</article>
+	`;
+}
+
+function renderEventSection(title, subtitle, eventsToRender, type) {
+	if (eventsToRender.length === 0) {
+		return "";
+	}
+
+	return `
+		<section class="event-group ${type}">
+			<div class="event-group-heading">
+				<div>
+					<span class="event-group-kicker">${escapeHtml(title)}</span>
+					${subtitle ? `<small>${escapeHtml(subtitle)}</small>` : ""}
+				</div>
+				<span class="event-group-count">${eventsToRender.length}</span>
 			</div>
-		`;
+			<div class="event-group-list">
+				${eventsToRender.map(getEventCardHtml).join("")}
+			</div>
+		</section>
+	`;
+}
+
+function getEventDisplayGroups(referenceDate = new Date()) {
+	const annualEvents = monthlyEvents.filter((event) => event.recurrenceType === "yearly");
+	upcomingEvents = getUpcomingRecurringEvents(referenceDate, 5);
+
+	const upcomingIds = new Set(upcomingEvents.map((event) => event.id));
+	const recurringEvents = monthlyEvents.filter((event) => (
+		event.recurrenceType === "monthly_rule" && !upcomingIds.has(event.id)
+	));
+
+	return { annualEvents, recurringEvents, upcomingEvents };
+}
+
+function renderEventCards(target, groups) {
+	const { annualEvents, recurringEvents, upcomingEvents: soonEvents } = groups;
+	const pastRecurring = hasPastMonthlyOccurrences();
+
+	if (annualEvents.length === 0 && recurringEvents.length === 0 && soonEvents.length === 0) {
+		target.innerHTML = pastRecurring
+			? `
+				<div class="panel-empty-state small monthly-finished">
+					<strong>Ebben a hónapban nincs több ismétlődő alkalom.</strong>
+					<span>A következő havi időpontok a következő hónapban jelennek meg.</span>
+				</div>
+			`
+			: `
+				<div class="panel-empty-state small">
+					<strong>Nincs esemény ebben a hónapban.</strong>
+				</div>
+			`;
 		return;
 	}
 
-	target.innerHTML = monthlyEvents
-		.map((event) => {
-			const place = getPlaceById(event.placeId);
-			const placeLabel = place ? place.name : "Helyszín nélkül";
-			const description = event.description ? `<p>${escapeHtml(event.description)}</p>` : "";
-			const ruleText = getEventRuleText(event);
-			const ruleHtml = ruleText ? `<span class="event-rule-text">${escapeHtml(ruleText)}</span>` : "";
-			const locationHint = place
-				? `<span class="event-place">📍 ${escapeHtml(placeLabel)}</span>`
-				: `<span class="event-place muted">Nincs térképes hely kapcsolva</span>`;
+	const recurringFallback = recurringEvents.length === 0 && pastRecurring && soonEvents.length === 0
+		? `
+			<section class="event-group monthly">
+				<div class="event-group-heading">
+					<div>
+						<span class="event-group-kicker">Havonta ismétlődő</span>
+						<small>Ebben a hónapban</small>
+					</div>
+				</div>
+				<div class="panel-empty-state small monthly-finished">
+					<strong>Ebben a hónapban nincs több alkalom.</strong>
+				</div>
+			</section>
+		`
+		: "";
 
-			return `
-				<article class="event-card">
-					<button class="event-card-main" type="button" data-event-focus-id="${event.id}">
-						${getEventDateBadge(event)}
-						<div class="event-card-copy">
-							<div class="event-card-meta">
-								<span>${escapeHtml(getEventDateLabel(event))}</span>
-								<span class="event-repeat-badge">${getEventRecurrenceLabel(event)}</span>
-							</div>
-							<h4>${escapeHtml(event.title)}</h4>
-							${ruleHtml}
-							${description}
-							${locationHint}
-						</div>
-					</button>
-					${event.website ? `<a class="event-link" href="${escapeHtml(event.website)}" target="_blank" rel="noopener noreferrer">Weboldal ↗</a>` : ""}
-				</article>
-			`;
-		})
-		.join("");
+	target.innerHTML = [
+		renderEventSection("Hamarosan", "Következő 5 nap", soonEvents, "upcoming"),
+		renderEventSection("Éves programok", "Aktuális időszakok", annualEvents, "annual"),
+		renderEventSection("Havonta ismétlődő", "Ebben a hónapban", recurringEvents, "monthly"),
+		recurringFallback
+	].join("");
 }
 
 function renderMonthlyEvents() {
 	const title = getMonthTitle();
+	const groups = getEventDisplayGroups(new Date());
+	const visibleEventCount = groups.annualEvents.length + groups.recurringEvents.length + groups.upcomingEvents.length;
+
 	desktopEventsTitle.textContent = title;
 	mobileEventsTitle.textContent = title;
-	desktopEventCount.textContent = monthlyEvents.length;
-	renderEventCards(desktopEventsList);
-	renderEventCards(mobileEventsList);
+	desktopEventCount.textContent = visibleEventCount;
+	renderEventCards(desktopEventsList, groups);
+	renderEventCards(mobileEventsList, groups);
 }
 
 function getEventDetailsDateHtml(event) {
@@ -927,7 +1216,7 @@ function openEventDetails(event, place = null) {
 }
 
 function focusEvent(eventId) {
-	const event = monthlyEvents.find((item) => item.id === Number(eventId));
+	const event = [...upcomingEvents, ...monthlyEvents].find((item) => item.id === Number(eventId));
 	if (!event) {
 		return;
 	}
@@ -1069,6 +1358,27 @@ function getPlaceImageHtml(place) {
 	return `<img class="place-image" src="${escapeHtml(place.image)}" alt="${escapeHtml(place.name)}">`;
 }
 
+function getNextMonthlyOccurrence(event, referenceDate = new Date()) {
+	const currentOccurrence = getNthWeekdayDate(
+		referenceDate.getFullYear(),
+		referenceDate.getMonth(),
+		event.recurrenceOrdinal,
+		event.recurrenceWeekday
+	);
+
+	if (currentOccurrence && startOfDay(currentOccurrence) >= startOfDay(referenceDate)) {
+		return currentOccurrence;
+	}
+
+	const nextMonth = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 1);
+	return getNthWeekdayDate(
+		nextMonth.getFullYear(),
+		nextMonth.getMonth(),
+		event.recurrenceOrdinal,
+		event.recurrenceWeekday
+	);
+}
+
 function getPlaceFreeEvents(place, referenceDate = new Date()) {
 	if (!isMuseumPlace(place)) {
 		return [];
@@ -1115,13 +1425,18 @@ function getFreeEntryHtml(place) {
 
 	getPlaceFreeEvents(place).forEach((event) => {
 		if (event.recurrenceType === "monthly_rule" && event.occurrenceDate) {
+			const nextOccurrence = getNextMonthlyOccurrence(event);
+			const occurrenceLabel = nextOccurrence
+				? `${nextOccurrence.getMonth() === new Date().getMonth() ? "Ebben a hónapban" : "Következő alkalom"}: ${formatOccurrenceDate(nextOccurrence)}.`
+				: "";
+
 			blocks.push(`
 				<div class="free-entry-card scheduled">
 					<div class="free-entry-icon" aria-hidden="true">◷</div>
 					<div>
 						<strong>Ingyenes látogatási nap</strong>
 						<span>${escapeHtml(getMonthlyRuleLabel(event.recurrenceOrdinal, event.recurrenceWeekday))}.</span>
-						<span class="free-entry-date">Ebben a hónapban: ${escapeHtml(formatOccurrenceDate(event.occurrenceDate))}.</span>
+						${occurrenceLabel ? `<span class="free-entry-date">${escapeHtml(occurrenceLabel)}</span>` : ""}
 					</div>
 				</div>
 			`);
@@ -1427,6 +1742,12 @@ function finishDetailsDrag(event) {
 
 // Events
 function handleFilterClick(event) {
+	const filterChip = event.target.closest("[data-filter-chip-type]");
+	if (filterChip) {
+		removeFilterChip(filterChip.dataset.filterChipType, filterChip.dataset.filterChipValue);
+		return;
+	}
+
 	const categoryButton = event.target.closest("[data-category-filter]");
 	if (categoryButton) {
 		toggleCategory(categoryButton.dataset.categoryFilter);
@@ -1457,6 +1778,7 @@ placeSearchResults.addEventListener("click", (event) => {
 resetFiltersButton.addEventListener("click", clearActiveFilters);
 mobileResetFiltersButton.addEventListener("click", clearActiveFilters);
 listClearFiltersButton.addEventListener("click", clearActiveFilters);
+mapEmptyResetButton.addEventListener("click", clearActiveFilters);
 
 listSearchInput.addEventListener("input", renderPlaceList);
 listSortSelect.addEventListener("change", renderPlaceList);
@@ -1473,11 +1795,20 @@ placesListView.addEventListener("click", (event) => {
 });
 
 mobileMenuButton.addEventListener("click", () => {
-	setMobileMenuOpen(!filterPanel.classList.contains("mobile-open"));
+	const willOpen = !filterPanel.classList.contains("mobile-open");
+	if (willOpen && isMobileLandscape()) {
+		setLandscapeMenuTab("filters");
+	}
+	setMobileMenuOpen(willOpen);
 });
 mobileSearchButton.addEventListener("click", () => {
+	setLandscapeMenuTab("filters");
 	setMobileMenuOpen(true);
 	setTimeout(() => placeSearchInput.focus(), 360);
+});
+
+landscapeMenuTabs.forEach((button) => {
+	button.addEventListener("click", () => setLandscapeMenuTab(button.dataset.landscapeMenuTab));
 });
 mobileShowMapButton.addEventListener("click", () => setMobileMenuOpen(false));
 
@@ -1593,6 +1924,7 @@ document.addEventListener("keydown", (event) => {
 });
 
 window.addEventListener("resize", () => {
+	updateVisualViewport();
 	detailsDragging = false;
 	clearDetailsDragStyles();
 
@@ -1617,18 +1949,28 @@ window.addEventListener("resize", () => {
 // Init
 window.openPlaceDetails = openPlaceDetails;
 
+updateVisualViewport();
+window.visualViewport?.addEventListener("resize", updateVisualViewport);
+window.visualViewport?.addEventListener("scroll", updateVisualViewport);
+window.addEventListener("orientationchange", () => setTimeout(updateVisualViewport, 120));
+setLandscapeMenuTab("filters");
+
 async function initializeApp() {
-	await Promise.all([
-		loadAppVersion(),
-		loadPlaces()
-	]);
-	await loadEvents();
+	try {
+		await Promise.all([
+			loadAppVersion(),
+			loadPlaces()
+		]);
+		await loadEvents();
 
-	if (!isMobile()) {
-		setDesktopEventsOpen(true);
+		if (!isMobile()) {
+			setDesktopEventsOpen(true);
+		}
+
+		map.invalidateSize();
+	} finally {
+		loadingSkeleton.classList.add("hidden");
 	}
-
-	map.invalidateSize();
 }
 
 initializeApp();

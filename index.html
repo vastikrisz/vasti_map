@@ -81,6 +81,11 @@
 					</div>
 
 					<div class="mobile-menu-main">
+						<div class="landscape-menu-tabs" role="tablist" aria-label="Mobil menü nézete">
+							<button class="landscape-menu-tab active" type="button" role="tab" aria-selected="true" data-landscape-menu-tab="filters">Szűrők</button>
+							<button class="landscape-menu-tab" type="button" role="tab" aria-selected="false" data-landscape-menu-tab="events">Események</button>
+						</div>
+
 						<div class="mobile-menu-controls">
 							<div class="map-search">
 								<label for="placeSearchInput">Hely keresése</label>
@@ -119,6 +124,11 @@
 									</button>
 								</div>
 							</section>
+
+							<div class="filter-summary">
+								<span id="filterResultsCount" class="result-count">0 hely</span>
+								<div id="activeFilterChips" class="active-filter-chips" aria-label="Aktív szűrők"></div>
+							</div>
 						</div>
 
 						<section class="mobile-events-section">
@@ -194,6 +204,8 @@
 									</button>
 								</div>
 							</section>
+
+							<div id="listActiveFilterChips" class="active-filter-chips list-filter-chips" aria-label="Aktív szűrők"></div>
 						</div>
 
 						<div id="placesListView" class="places-list-view"></div>
@@ -213,6 +225,23 @@
 				</aside>
 
 				<div id="map" aria-label="Interaktív térkép"></div>
+
+				<div id="mapEmptyState" class="map-empty-state hidden" role="status">
+					<strong>Nincs találat</strong>
+					<span>Próbálj más kategóriát vagy szűrőt választani.</span>
+					<button id="mapEmptyResetButton" type="button">Szűrők törlése</button>
+				</div>
+
+				<div id="loadingSkeleton" class="loading-skeleton" aria-label="Térkép betöltése">
+					<div class="skeleton-card">
+						<span class="skeleton-line wide"></span>
+						<span class="skeleton-line medium"></span>
+						<div class="skeleton-row">
+							<span class="skeleton-pill"></span>
+							<span class="skeleton-pill short"></span>
+						</div>
+					</div>
+				</div>
 			</section>
 
 			<!-- Details -->

@@ -1351,3 +1351,43 @@ input[type="file"]::file-selector-button {
 	background: rgba(34, 197, 94, 0.10);
 	color: #86efac;
 }
+
+/* Data status */
+
+.place-status {
+	gap: 5px;
+	border: 1px solid transparent;
+	font-weight: 700;
+}
+
+.place-status::before {
+	width: 5px;
+	height: 5px;
+	border-radius: 50%;
+	background: currentColor;
+	content: "";
+	opacity: 0.8;
+}
+
+.place-status.incomplete {
+	border-color: rgba(245, 158, 11, 0.22);
+	background: rgba(245, 158, 11, 0.10);
+	color: #fbbf24;
+}
+
+.event-admin-item.published {
+	border-left: 3px solid rgba(34, 197, 94, 0.65);
+}
+
+.event-admin-item.draft {
+	border-left: 3px solid rgba(148, 163, 184, 0.45);
+	opacity: 0.82;
+}
+
+.event-admin-item .place-status.published {
+	border-color: rgba(34, 197, 94, 0.22);
+}
+
+.event-admin-item .place-status.draft {
+	border-color: rgba(148, 163, 184, 0.20);
+}

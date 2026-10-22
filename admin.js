@@ -212,6 +212,45 @@ async function loadAdminPlaces() {
 	updateEventPlaceOptions();
 	renderAdminPlaces();
 }
+function normalizeCompareText(value) {
+	return String(value || "")
+		.normalize("NFD")
+		.replace(/[\u0300-\u036f]/g, "")
+		.toLocaleLowerCase("hu")
+		.replace(/[^a-z0-9]+/g, " ")
+		.trim();
+}
+
+function findPotentialDuplicatePlace(name, address, city, excludeId = null) {
+	const normalizedName = normalizeCompareText(name);
+	const normalizedAddress = normalizeCompareText(address);
+	const normalizedCity = normalizeCompareText(city);
+
+	return adminPlaces.find((place) => {
+		if (excludeId && Number(place.id) === Number(excludeId)) {
+			return false;
+		}
+
+		const sameName = normalizeCompareText(place.name) === normalizedName;
+		const sameAddress = normalizedAddress && normalizeCompareText(place.address) === normalizedAddress;
+		const sameCity = normalizedCity && normalizeCompareText(place.city) === normalizedCity;
+		return sameAddress || (sameName && sameCity);
+	}) || null;
+}
+
+function getMissingPlaceFields(place) {
+	const missing = [];
+	const imageUrls = Array.isArray(place.image_urls) ? place.image_urls : [];
+
+	if (imageUrls.length === 0) missing.push("kép");
+	if (!String(place.description || "").trim()) missing.push("leírás");
+	if (!place.is_free && !String(place.ticket_info || "").trim()) missing.push("jegyinfó");
+	if (!String(place.opening_hours || "").trim()) missing.push("nyitvatartás");
+	if (!String(place.website || "").trim()) missing.push("weboldal");
+
+	return missing;
+}
+
 function renderAdminPlaces() {
 	const searchText = placesSearchInput.value
 		.trim()
@@ -257,6 +296,10 @@ function renderAdminPlaces() {
 			const freeHtml = place.is_free
 				? `<span class="place-status free">Ingyenes</span>`
 				: "";
+			const missingFields = getMissingPlaceFields(place);
+			const missingHtml = missingFields.length > 0
+				? `<span class="place-status incomplete" title="Hiányzik: ${escapeHtml(missingFields.join(", "))}">Hiányos · ${missingFields.length}</span>`
+				: "";
 			return `
 				<article class="place-list-item">
 					<div class="place-list-content">
@@ -271,6 +314,7 @@ function renderAdminPlaces() {
 						<div class="place-list-meta">
 							${statusHtml}
 							${freeHtml}
+							${missingHtml}
 							${categoryHtml}
 						</div>
 					</div>
@@ -512,6 +556,21 @@ async function savePlace(event) {
 		return;
 	}
 	const isEditing = editingPlaceId !== null;
+	const duplicatePlace = findPotentialDuplicatePlace(name, address, city, editingPlaceId);
+	if (duplicatePlace) {
+		const proceed = window.confirm(
+			`Lehetséges duplikációt találtam:
+
+${duplicatePlace.name}
+${duplicatePlace.address || duplicatePlace.city || ""}
+
+Ettől függetlenül elmented az új adatot?`
+		);
+		if (!proceed) {
+			return;
+		}
+	}
+
 	savePlaceButton.disabled = true;
 	let finalImageUrl = editingOriginalImageUrl || "";
 	let finalStoragePath = editingOriginalStoragePath || null;
@@ -923,6 +982,21 @@ async function saveEventPlace() {
 		return;
 	}
 
+	const duplicatePlace = findPotentialDuplicatePlace(name, address, city);
+	if (duplicatePlace) {
+		const proceed = window.confirm(
+			`Lehetséges duplikációt találtam:
+
+${duplicatePlace.name}
+${duplicatePlace.address || duplicatePlace.city || ""}
+
+Ettől függetlenül létrehozod ezt az eseményhelyszínt?`
+		);
+		if (!proceed) {
+			return;
+		}
+	}
+
 	saveEventPlaceButton.disabled = true;
 	saveEventPlaceButton.textContent = "Mentés...";
 	const { data, error } = await supabaseClient
@@ -1032,11 +1106,11 @@ function renderAdminEvents() {
 	eventsList.innerHTML = filteredEvents
 		.map((event) => {
 			const statusClass = event.is_published ? "published" : "draft";
-			const statusText = event.is_published ? "Közzétéve" : "Piszkozat";
+			const statusText = event.is_published ? "Aktív" : "Elrejtett";
 			const placeName = getAdminEventPlaceName(event.place_id);
 
 			return `
-				<article class="event-admin-item">
+				<article class="event-admin-item ${statusClass}">
 					<div class="event-admin-content">
 						<div class="event-admin-heading">
 							<h3>${escapeHtml(event.title)}</h3>
