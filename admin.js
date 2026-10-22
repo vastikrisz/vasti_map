@@ -90,6 +90,7 @@ const cancelEventPlaceButton = document.getElementById("cancelEventPlaceButton")
 const eventWebsite = document.getElementById("eventWebsite");
 const eventDescription = document.getElementById("eventDescription");
 const eventImageFile = document.getElementById("eventImageFile");
+const eventImageUrl = document.getElementById("eventImageUrl");
 const eventImageMessage = document.getElementById("eventImageMessage");
 const eventImagePreviewContainer = document.getElementById("eventImagePreviewContainer");
 const eventImagePreview = document.getElementById("eventImagePreview");
@@ -787,7 +788,9 @@ function showEventImagePreview(imageSource) {
 
 function clearEventImageSelection(markExistingImageForRemoval = true) {
 	eventImageFile.value = "";
+	eventImageUrl.value = "";
 	eventImageMessage.textContent = "";
+	eventImageMessage.className = "field-message";
 	showEventImagePreview("");
 
 	if (markExistingImageForRemoval && editingEventId !== null && editingEventOriginalImageUrl) {
@@ -1096,6 +1099,14 @@ function startEditingEvent(eventId) {
 	editingEventOriginalImageUrl = event.image_url || "";
 	removeExistingEventImageOnSave = false;
 	clearEventImageSelection(false);
+
+	if (editingEventOriginalStoragePath) {
+		eventImageMessage.textContent = "Jelenlegi, tárhelyre feltöltött kép.";
+		eventImageMessage.className = "field-message";
+	} else {
+		eventImageUrl.value = editingEventOriginalImageUrl;
+	}
+
 	showEventImagePreview(editingEventOriginalImageUrl);
 	eventIsPublished.checked = Boolean(event.is_published);
 	saveEventButton.textContent = "Módosítások mentése";
@@ -1206,6 +1217,7 @@ async function saveEvent(event) {
 	let finalStoragePath = isEditing && !removeExistingEventImageOnSave ? editingEventOriginalStoragePath : null;
 	let newlyUploadedStoragePath = null;
 	const selectedImage = eventImageFile.files?.[0];
+	const externalImageUrl = eventImageUrl.value.trim();
 
 	if (selectedImage) {
 		saveEventButton.disabled = true;
@@ -1225,6 +1237,13 @@ async function saveEvent(event) {
 			eventImageMessage.className = "field-message error-text";
 			return;
 		}
+	} else if (externalImageUrl) {
+		finalImageUrl = externalImageUrl;
+		finalStoragePath = null;
+		removeExistingEventImageOnSave = false;
+	} else if (removeExistingEventImageOnSave) {
+		finalImageUrl = "";
+		finalStoragePath = null;
 	}
 
 	eventToSave.image_url = finalImageUrl || null;
@@ -2094,7 +2113,7 @@ eventImageFile.addEventListener("change", () => {
 	eventImageMessage.className = "field-message";
 
 	if (!file) {
-		showEventImagePreview(editingEventOriginalImageUrl);
+		showEventImagePreview(eventImageUrl.value.trim() || editingEventOriginalImageUrl);
 		return;
 	}
 
@@ -2110,6 +2129,19 @@ eventImageFile.addEventListener("change", () => {
 	eventImageMessage.textContent = `Kiválasztva: ${file.name}`;
 	eventImageMessage.className = "field-message success-text";
 });
+
+eventImageUrl.addEventListener("input", () => {
+	if (eventImageFile.files?.[0]) {
+		return;
+	}
+
+	const imageUrl = eventImageUrl.value.trim();
+	removeExistingEventImageOnSave = false;
+	showEventImagePreview(imageUrl);
+	eventImageMessage.textContent = imageUrl ? "Külső képlink használata." : "";
+	eventImageMessage.className = "field-message";
+});
+
 removeEventImageButton.addEventListener("click", () => clearEventImageSelection(true));
 eventsSearchInput.addEventListener("input", renderAdminEvents);
 refreshEventsButton.addEventListener("click", loadAdminEvents);

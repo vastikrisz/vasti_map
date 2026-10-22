@@ -80,53 +80,57 @@
 						<h2>Keresés és szűrők</h2>
 					</div>
 
-					<div class="map-search">
-						<label for="placeSearchInput">Hely keresése</label>
-						<div class="search-input-wrap">
-							<svg viewBox="0 0 24 24" aria-hidden="true">
-								<circle cx="11" cy="11" r="5.5" fill="none" stroke="currentColor" stroke-width="2"></circle>
-								<path d="M16 16 L21 21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
-							</svg>
-							<input id="placeSearchInput" type="search" placeholder="Név, cím vagy kategória..." autocomplete="off">
-						</div>
-						<div id="placeSearchResults" class="map-search-results hidden"></div>
-					</div>
-
-					<section class="filter-section">
-						<div class="filter-section-heading">
-							<strong>Kategóriák</strong>
-							<span id="activeFilterCount" class="filter-counter">Mind</span>
-						</div>
-						<div id="categoryFilters" class="category-filters"></div>
-					</section>
-
-					<section id="priceFilterSection" class="filter-section price-filter-section hidden">
-						<strong>Árkategória</strong>
-						<div id="priceFilters" class="category-filters compact">
-							<button class="category-button price-filter-button" type="button" data-price-level="cheap">Olcsó</button>
-							<button class="category-button price-filter-button" type="button" data-price-level="expensive">Drága</button>
-						</div>
-					</section>
-
-					<section class="filter-section">
-						<strong>Belépés</strong>
-						<div class="category-filters compact">
-							<button class="category-button free-filter-button" type="button" data-free-filter="true">
-								<span aria-hidden="true">✓</span>
-								Ingyenes
-							</button>
-						</div>
-					</section>
-
-					<section class="mobile-events-section">
-						<div class="panel-section-heading">
-							<div>
-								<span class="panel-eyebrow">Aktuális</span>
-								<h3 id="mobileEventsTitle">Havi események</h3>
+					<div class="mobile-menu-main">
+						<div class="mobile-menu-controls">
+							<div class="map-search">
+								<label for="placeSearchInput">Hely keresése</label>
+								<div class="search-input-wrap">
+									<svg viewBox="0 0 24 24" aria-hidden="true">
+										<circle cx="11" cy="11" r="5.5" fill="none" stroke="currentColor" stroke-width="2"></circle>
+										<path d="M16 16 L21 21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+									</svg>
+									<input id="placeSearchInput" type="search" placeholder="Név, cím vagy kategória..." autocomplete="off">
+								</div>
+								<div id="placeSearchResults" class="map-search-results hidden"></div>
 							</div>
+
+							<section class="filter-section">
+								<div class="filter-section-heading">
+									<strong>Kategóriák</strong>
+									<span id="activeFilterCount" class="filter-counter">Mind</span>
+								</div>
+								<div id="categoryFilters" class="category-filters"></div>
+							</section>
+
+							<section id="priceFilterSection" class="filter-section price-filter-section hidden">
+								<strong>Árkategória</strong>
+								<div id="priceFilters" class="category-filters compact">
+									<button class="category-button price-filter-button" type="button" data-price-level="cheap">Olcsó</button>
+									<button class="category-button price-filter-button" type="button" data-price-level="expensive">Drága</button>
+								</div>
+							</section>
+
+							<section class="filter-section">
+								<strong>Belépés</strong>
+								<div class="category-filters compact">
+									<button class="category-button free-filter-button" type="button" data-free-filter="true">
+										<span aria-hidden="true">✓</span>
+										Ingyenes
+									</button>
+								</div>
+							</section>
 						</div>
-						<div id="mobileEventsList" class="events-list compact"></div>
-					</section>
+
+						<section class="mobile-events-section">
+							<div class="panel-section-heading">
+								<div>
+									<span class="panel-eyebrow">Aktuális</span>
+									<h3 id="mobileEventsTitle">Havi események</h3>
+								</div>
+							</div>
+							<div id="mobileEventsList" class="events-list compact"></div>
+						</section>
+					</div>
 
 					<div class="mobile-menu-actions">
 						<button id="mobileResetFiltersButton" class="panel-button secondary" type="button">Szűrők törlése</button>
@@ -145,51 +149,55 @@
 						<button id="closeListButton" class="panel-close-button" type="button" aria-label="Lista bezárása">×</button>
 					</div>
 
-					<div class="list-tools">
-						<div class="search-input-wrap">
-							<svg viewBox="0 0 24 24" aria-hidden="true">
-								<circle cx="11" cy="11" r="5.5" fill="none" stroke="currentColor" stroke-width="2"></circle>
-								<path d="M16 16 L21 21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
-							</svg>
-							<input id="listSearchInput" type="search" placeholder="Keresés a listában..." autocomplete="off">
+					<div class="list-panel-body">
+						<div class="list-controls">
+							<div class="list-tools">
+								<div class="search-input-wrap">
+									<svg viewBox="0 0 24 24" aria-hidden="true">
+										<circle cx="11" cy="11" r="5.5" fill="none" stroke="currentColor" stroke-width="2"></circle>
+										<path d="M16 16 L21 21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+									</svg>
+									<input id="listSearchInput" type="search" placeholder="Keresés a listában..." autocomplete="off">
+								</div>
+
+								<label class="list-sort-field" for="listSortSelect">
+									<span>Rendezés</span>
+									<select id="listSortSelect">
+										<option value="name">Név szerint</option>
+										<option value="city">Település szerint</option>
+									</select>
+								</label>
+							</div>
+
+							<section class="list-filter-block">
+								<div class="filter-section-heading">
+									<strong>Kategóriák</strong>
+									<button id="listClearFiltersButton" class="text-button" type="button">Törlés</button>
+								</div>
+								<div id="listCategoryFilters" class="category-filters list-categories"></div>
+							</section>
+
+							<section id="listPriceFilterSection" class="list-filter-block hidden">
+								<strong>Árkategória</strong>
+								<div id="listPriceFilters" class="category-filters compact">
+									<button class="category-button price-filter-button" type="button" data-price-level="cheap">Olcsó</button>
+									<button class="category-button price-filter-button" type="button" data-price-level="expensive">Drága</button>
+								</div>
+							</section>
+
+							<section class="list-filter-block">
+								<strong>Belépés</strong>
+								<div class="category-filters compact">
+									<button class="category-button free-filter-button" type="button" data-free-filter="true">
+										<span aria-hidden="true">✓</span>
+										Ingyenes
+									</button>
+								</div>
+							</section>
 						</div>
 
-						<label class="list-sort-field" for="listSortSelect">
-							<span>Rendezés</span>
-							<select id="listSortSelect">
-								<option value="name">Név szerint</option>
-								<option value="city">Település szerint</option>
-							</select>
-						</label>
+						<div id="placesListView" class="places-list-view"></div>
 					</div>
-
-					<section class="list-filter-block">
-						<div class="filter-section-heading">
-							<strong>Kategóriák</strong>
-							<button id="listClearFiltersButton" class="text-button" type="button">Törlés</button>
-						</div>
-						<div id="listCategoryFilters" class="category-filters list-categories"></div>
-					</section>
-
-					<section id="listPriceFilterSection" class="list-filter-block hidden">
-						<strong>Árkategória</strong>
-						<div id="listPriceFilters" class="category-filters compact">
-							<button class="category-button price-filter-button" type="button" data-price-level="cheap">Olcsó</button>
-							<button class="category-button price-filter-button" type="button" data-price-level="expensive">Drága</button>
-						</div>
-					</section>
-
-					<section class="list-filter-block">
-						<strong>Belépés</strong>
-						<div class="category-filters compact">
-							<button class="category-button free-filter-button" type="button" data-free-filter="true">
-								<span aria-hidden="true">✓</span>
-								Ingyenes
-							</button>
-						</div>
-					</section>
-
-					<div id="placesListView" class="places-list-view"></div>
 				</aside>
 
 				<!-- Events -->
