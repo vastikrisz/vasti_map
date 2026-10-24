@@ -31,3 +31,9 @@ Eseményrendszer v3:
 - A publikus térképen és listában külön Ingyenes szűrő használható a kategóriákkal együtt.
 - A múzeumhoz kapcsolt események a jegyinformációnál ingyenes látogatási alkalomként jelennek meg.
 - A havi szabályos események aktuális havi dátumát a rendszer automatikusan kiszámolja.
+
+UI frissítés:
+- Mobilon külön Lista / Szűrők / Események panelek.
+- Landscape nézetben kompakt oldalsó panelek és dinamikus fejléc.
+- Desktopon felső sávba integrált kategóriaszűrők.
+- Szélesebb desktop lista és nagyobb hely-képek.

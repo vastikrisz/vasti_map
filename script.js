@@ -46,6 +46,9 @@ let events = [];
 let monthlyEvents = [];
 let upcomingEvents = [];
 let allCategories = [];
+let browseablePlaces = [];
+let visiblePlaces = [];
+let stableViewportHeight = 0;
 let selectedMarkerId = null;
 let activeEventId = null;
 let lightboxSourceImage = null;
@@ -61,6 +64,11 @@ let detailsSheetProgress = 0;
 const selectedCategories = new Set();
 const selectedPriceLevels = new Set();
 let freeOnly = false;
+
+const listSelectedCategories = new Set();
+const listSelectedPriceLevels = new Set();
+let listFreeOnly = false;
+const placeById = new Map();
 const markerByPlaceId = new Map();
 const visibleMarkerIds = new Set();
 
@@ -109,26 +117,24 @@ const placeSearchInput = document.getElementById("placeSearchInput");
 const placeSearchResults = document.getElementById("placeSearchResults");
 const categoryFilters = document.getElementById("categoryFilters");
 const listCategoryFilters = document.getElementById("listCategoryFilters");
+const desktopCategoryFilters = document.getElementById("desktopCategoryFilters");
 const activeFilterCount = document.getElementById("activeFilterCount");
 const filterResultsCount = document.getElementById("filterResultsCount");
 const activeFilterChips = document.getElementById("activeFilterChips");
-const listActiveFilterChips = document.getElementById("listActiveFilterChips");
 const priceFilterSection = document.getElementById("priceFilterSection");
-const listPriceFilterSection = document.getElementById("listPriceFilterSection");
-const resetFiltersButton = document.getElementById("resetFiltersButton");
-const mobileResetFiltersButton = document.getElementById("mobileResetFiltersButton");
-const listClearFiltersButton = document.getElementById("listClearFiltersButton");
+const listFilterRow = document.getElementById("listFilterRow");
 
 const filterPanel = document.getElementById("filterPanel");
-const mobileSearchButton = document.getElementById("mobileSearchButton");
 const mobileListButton = document.getElementById("mobileListButton");
 const mobileMenuButton = document.getElementById("mobileMenuButton");
-const mobileShowMapButton = document.getElementById("mobileShowMapButton");
-const landscapeMenuTabs = document.querySelectorAll("[data-landscape-menu-tab]");
+const mobileEventsButton = document.getElementById("mobileEventsButton");
 const uiBackdrop = document.getElementById("uiBackdrop");
 
 const listPanel = document.getElementById("listPanel");
 const desktopListButton = document.getElementById("desktopListButton");
+const desktopPlaceSearchInput = document.getElementById("desktopPlaceSearchInput");
+const desktopPlaceSearchResults = document.getElementById("desktopPlaceSearchResults");
+const desktopResultsCount = document.getElementById("desktopResultsCount");
 const closeListButton = document.getElementById("closeListButton");
 const listSearchInput = document.getElementById("listSearchInput");
 const listSortSelect = document.getElementById("listSortSelect");
@@ -139,10 +145,9 @@ const desktopEventsButton = document.getElementById("desktopEventsButton");
 const desktopEventsClose = document.getElementById("desktopEventsClose");
 const desktopEventsPanel = document.getElementById("desktopEventsPanel");
 const desktopEventsList = document.getElementById("desktopEventsList");
-const mobileEventsList = document.getElementById("mobileEventsList");
 const desktopEventsTitle = document.getElementById("desktopEventsTitle");
-const mobileEventsTitle = document.getElementById("mobileEventsTitle");
 const desktopEventCount = document.getElementById("desktopEventCount");
+const mobileEventCount = document.getElementById("mobileEventCount");
 
 const imageLightbox = document.getElementById("imageLightbox");
 const imageLightboxImage = document.getElementById("imageLightboxImage");
@@ -150,7 +155,7 @@ const imageLightboxClose = document.getElementById("imageLightboxClose");
 const appVersionElements = document.querySelectorAll(".app-version");
 const mapEmptyState = document.getElementById("mapEmptyState");
 const mapEmptyResetButton = document.getElementById("mapEmptyResetButton");
-const loadingSkeleton = document.getElementById("loadingSkeleton");
+const loadingIndicator = document.getElementById("loadingIndicator");
 
 // Helpers
 function escapeHtml(value) {
@@ -166,6 +171,21 @@ function clamp(value, min, max) {
 	return Math.min(max, Math.max(min, value));
 }
 
+function debounce(callback, delay = 110) {
+	let timeoutId = null;
+
+	return (...args) => {
+		window.clearTimeout(timeoutId);
+		timeoutId = window.setTimeout(() => callback(...args), delay);
+	};
+}
+
+function isEditableElement(element = document.activeElement) {
+	return element instanceof HTMLElement && (
+		element.matches("input, textarea, select") || element.isContentEditable
+	);
+}
+
 function isMobile() {
 	return window.innerWidth <= MOBILE_BREAKPOINT || isMobileLandscape();
 }
@@ -178,21 +198,49 @@ function isMobilePortrait() {
 	return isMobile() && !isMobileLandscape();
 }
 
-function updateVisualViewport() {
+function updateVisualViewport({ force = false } = {}) {
 	const viewportHeight = Math.round(window.visualViewport?.height || window.innerHeight);
+	const keyboardLikelyOpen = isMobile() && isEditableElement() && stableViewportHeight > 0 &&
+		viewportHeight < stableViewportHeight - 120;
+
+	if (!force && keyboardLikelyOpen) {
+		document.body.classList.add("keyboard-open");
+		return;
+	}
+
+	document.body.classList.remove("keyboard-open");
+	stableViewportHeight = viewportHeight;
 	document.documentElement.style.setProperty("--visual-viewport-height", `${viewportHeight}px`);
 }
 
-function setLandscapeMenuTab(tab) {
-	const activeTab = tab === "events" ? "events" : "filters";
-	filterPanel.dataset.landscapeTab = activeTab;
-
-	landscapeMenuTabs.forEach((button) => {
-		const isActive = button.dataset.landscapeMenuTab === activeTab;
-		button.classList.toggle("active", isActive);
-		button.setAttribute("aria-selected", String(isActive));
-	});
+function getStableViewportHeight() {
+	return stableViewportHeight || Math.round(window.visualViewport?.height || window.innerHeight);
 }
+
+function setupScrollFade(element) {
+	if (!element) {
+		return;
+	}
+
+	const update = () => {
+		const hasOverflow = element.scrollHeight > element.clientHeight + 2;
+		const atTop = element.scrollTop <= 2;
+		const atBottom = element.scrollTop + element.clientHeight >= element.scrollHeight - 2;
+
+		element.classList.toggle("scroll-fade-top", hasOverflow && !atTop);
+		element.classList.toggle("scroll-fade-bottom", hasOverflow && !atBottom);
+	};
+
+	element.addEventListener("scroll", update, { passive: true });
+	new ResizeObserver(update).observe(element);
+	new MutationObserver(() => requestAnimationFrame(update)).observe(element, {
+		childList: true,
+		subtree: true
+	});
+
+	requestAnimationFrame(update);
+}
+
 
 function getMonthName(month) {
 	return MONTH_NAMES[Number(month) - 1] || "";
@@ -263,11 +311,11 @@ function getMonthTitle(date = new Date()) {
 }
 
 function getPlaceById(placeId) {
-	return places.find((place) => Number(place.id) === Number(placeId)) || null;
+	return placeById.get(Number(placeId)) || null;
 }
 
 function getBrowseablePlaces() {
-	return places.filter((place) => !place.isEventOnly);
+	return browseablePlaces;
 }
 
 // Version
@@ -344,6 +392,10 @@ async function loadPlaces() {
 		};
 	});
 
+	placeById.clear();
+	places.forEach((place) => placeById.set(place.id, place));
+	browseablePlaces = places.filter((place) => !place.isEventOnly);
+
 	allCategories = [...new Set(getBrowseablePlaces().flatMap((place) => place.categories))]
 		.sort((a, b) => a.localeCompare(b, "hu"));
 
@@ -417,9 +469,72 @@ function renderCategoryFilters() {
 		})
 		.join("");
 
+	const listHtml = allCategories
+		.map((category) => {
+			const config = CATEGORY_MARKER_CONFIG[category] || DEFAULT_MARKER_CONFIG;
+			const label = escapeHtml(category);
+			const isFood = category === "Kajálda";
+
+			return `
+				<div class="list-filter-item ${isFood ? "food" : ""}">
+					<button
+						class="category-button category-icon-button"
+						type="button"
+						data-list-category-filter="${label}"
+						aria-label="${label}"
+						title="${label}"
+					>
+						<span aria-hidden="true">${config.symbol}</span>
+					</button>
+					${isFood ? `
+						<div class="list-price-branch" aria-label="Kajálda árkategória">
+							<button type="button" data-list-price-level="cheap" aria-label="Olcsó" title="Olcsó">€</button>
+							<button type="button" data-list-price-level="expensive" aria-label="Drága" title="Drága">€€</button>
+						</div>
+					` : ""}
+				</div>
+			`;
+		})
+		.join("");
+
+	const desktopHtml = allCategories
+		.map((category) => {
+			const config = CATEGORY_MARKER_CONFIG[category] || DEFAULT_MARKER_CONFIG;
+			const label = escapeHtml(category);
+			const priceDock = category === "Kajálda"
+				? `
+					<div id="desktopPriceDock" class="desktop-price-dock hidden">
+						<button type="button" data-price-level="cheap" aria-label="Olcsó" title="Olcsó">€</button>
+						<button type="button" data-price-level="expensive" aria-label="Drága" title="Drága">€€</button>
+					</div>
+				`
+				: "";
+
+			return `
+				<div class="desktop-filter-item ${category === "Kajálda" ? "food" : ""}">
+					<button
+						class="desktop-filter-button"
+						type="button"
+						data-category-filter="${label}"
+						aria-label="${label}"
+						title="${label}"
+					>
+						<span aria-hidden="true">${config.symbol}</span>
+					</button>
+					${priceDock}
+				</div>
+			`;
+		})
+		.join("");
+
 	categoryFilters.innerHTML = html;
-	listCategoryFilters.innerHTML = html;
+	listCategoryFilters.innerHTML = `${listHtml}
+		<div class="list-filter-item free">
+			<button class="category-button list-free-filter" type="button" data-list-free-filter="true" aria-label="Ingyenes" title="Ingyenes">0 Ft</button>
+		</div>`;
+	desktopCategoryFilters.innerHTML = desktopHtml;
 	syncFilterControls();
+	syncListFilterControls();
 }
 
 function isFoodPlace(place) {
@@ -430,25 +545,22 @@ function isMuseumPlace(place) {
 	return place.categories.includes("Múzeum");
 }
 
-function getVisiblePlaces() {
-	return getBrowseablePlaces().filter((place) => {
+function computeVisiblePlaces() {
+	return browseablePlaces.filter((place) => {
 		const categoryMatches = selectedCategories.size === 0 ||
 			place.categories.some((category) => selectedCategories.has(category));
 
-		if (!categoryMatches) {
+		if (!categoryMatches || (freeOnly && !place.isFree)) {
 			return false;
 		}
 
-		if (freeOnly && !place.isFree) {
-			return false;
-		}
-
-		if (!isFoodPlace(place) || selectedPriceLevels.size === 0) {
-			return true;
-		}
-
-		return selectedPriceLevels.has(place.priceLevel);
+		return !isFoodPlace(place) || selectedPriceLevels.size === 0 ||
+			selectedPriceLevels.has(place.priceLevel);
 	});
+}
+
+function getVisiblePlaces() {
+	return visiblePlaces;
 }
 
 function syncFilterControls() {
@@ -466,7 +578,7 @@ function syncFilterControls() {
 
 	const foodSelected = selectedCategories.has("Kajálda");
 	priceFilterSection.classList.toggle("hidden", !foodSelected);
-	listPriceFilterSection.classList.toggle("hidden", !foodSelected);
+	document.querySelector(".desktop-price-dock")?.classList.toggle("hidden", !foodSelected);
 
 	if (!foodSelected && selectedPriceLevels.size > 0) {
 		selectedPriceLevels.clear();
@@ -477,6 +589,25 @@ function syncFilterControls() {
 
 	const filterCount = selectedCategories.size + selectedPriceLevels.size + (freeOnly ? 1 : 0);
 	activeFilterCount.textContent = filterCount ? `${filterCount} aktív` : "Mind";
+}
+
+function syncListFilterControls() {
+	const foodSelected = listSelectedCategories.has("Kajálda");
+
+	if (!foodSelected && listSelectedPriceLevels.size > 0) {
+		listSelectedPriceLevels.clear();
+	}
+
+	listPanel.querySelectorAll("[data-list-category-filter]").forEach((button) => {
+		button.classList.toggle("active", listSelectedCategories.has(button.dataset.listCategoryFilter));
+	});
+
+	listPanel.querySelectorAll("[data-list-price-level]").forEach((button) => {
+		button.classList.toggle("active", listSelectedPriceLevels.has(button.dataset.listPriceLevel));
+	});
+
+	listPanel.querySelector("[data-list-free-filter]")?.classList.toggle("active", listFreeOnly);
+	listFilterRow.classList.toggle("food-active", foodSelected);
 }
 
 function getActiveFilterItems() {
@@ -518,9 +649,7 @@ function renderActiveFilterChips() {
 		.join("");
 
 	activeFilterChips.innerHTML = html;
-	listActiveFilterChips.innerHTML = html;
 	activeFilterChips.classList.toggle("hidden", filters.length === 0);
-	listActiveFilterChips.classList.toggle("hidden", filters.length === 0);
 }
 
 function updateResultSummary() {
@@ -528,14 +657,15 @@ function updateResultSummary() {
 	const label = `${visibleCount} hely`;
 
 	filterResultsCount.textContent = label;
+	desktopResultsCount.textContent = label;
 	mapEmptyState.classList.toggle("hidden", visibleCount !== 0);
 }
 
 function applyFilters() {
+	visiblePlaces = computeVisiblePlaces();
 	syncFilterControls();
 	renderActiveFilterChips();
 	renderMarkers();
-	renderPlaceList();
 	updateResultSummary();
 }
 
@@ -581,6 +711,34 @@ function removeFilterChip(type, value) {
 	}
 
 	applyFilters();
+}
+
+function toggleListCategory(category) {
+	if (listSelectedCategories.has(category)) {
+		listSelectedCategories.delete(category);
+	} else {
+		listSelectedCategories.add(category);
+	}
+
+	syncListFilterControls();
+	renderPlaceList();
+}
+
+function toggleListPriceLevel(priceLevel) {
+	if (listSelectedPriceLevels.has(priceLevel)) {
+		listSelectedPriceLevels.delete(priceLevel);
+	} else {
+		listSelectedPriceLevels.add(priceLevel);
+	}
+
+	syncListFilterControls();
+	renderPlaceList();
+}
+
+function toggleListFreeOnly() {
+	listFreeOnly = !listFreeOnly;
+	syncListFilterControls();
+	renderPlaceList();
 }
 
 // Markers
@@ -710,11 +868,11 @@ function showEventFocusMarker(event, place) {
 }
 
 // Search
-function renderPlaceSearchResults() {
-	const searchText = placeSearchInput.value.trim().toLocaleLowerCase("hu");
+function renderPlaceSearchResults(input, results) {
+	const searchText = input.value.trim().toLocaleLowerCase("hu");
 	if (searchText.length < 2) {
-		placeSearchResults.innerHTML = "";
-		placeSearchResults.classList.add("hidden");
+		results.innerHTML = "";
+		results.classList.add("hidden");
 		return;
 	}
 
@@ -722,13 +880,13 @@ function renderPlaceSearchResults() {
 		.filter((place) => place.searchText.includes(searchText))
 		.slice(0, 10);
 
-	placeSearchResults.classList.remove("hidden");
+	results.classList.remove("hidden");
 	if (matchingPlaces.length === 0) {
-		placeSearchResults.innerHTML = `<div class="map-search-empty">Nincs találat.</div>`;
+		results.innerHTML = `<div class="map-search-empty">Nincs találat.</div>`;
 		return;
 	}
 
-	placeSearchResults.innerHTML = matchingPlaces
+	results.innerHTML = matchingPlaces
 		.map((place) => `
 			<button class="map-search-result" type="button" data-search-place-id="${place.id}">
 				<strong>${escapeHtml(place.name)}</strong>
@@ -748,8 +906,11 @@ function selectPlaceFromSearch(placeId) {
 	selectedPriceLevels.clear();
 	freeOnly = false;
 	placeSearchInput.value = place.name;
+	desktopPlaceSearchInput.value = place.name;
 	placeSearchResults.innerHTML = "";
+	desktopPlaceSearchResults.innerHTML = "";
 	placeSearchResults.classList.add("hidden");
+	desktopPlaceSearchResults.classList.add("hidden");
 	applyFilters();
 	focusPlace(place, true);
 }
@@ -758,7 +919,21 @@ function selectPlaceFromSearch(placeId) {
 function getListPlaces() {
 	const searchText = listSearchInput.value.trim().toLocaleLowerCase("hu");
 	const sortMode = listSortSelect.value;
-	const filteredPlaces = getVisiblePlaces().filter((place) => !searchText || place.searchText.includes(searchText));
+	const filteredPlaces = browseablePlaces.filter((place) => {
+		const categoryMatches = listSelectedCategories.size === 0 ||
+			place.categories.some((category) => listSelectedCategories.has(category));
+
+		if (!categoryMatches || (listFreeOnly && !place.isFree)) {
+			return false;
+		}
+
+		if (isFoodPlace(place) && listSelectedPriceLevels.size > 0 &&
+			!listSelectedPriceLevels.has(place.priceLevel)) {
+			return false;
+		}
+
+		return !searchText || place.searchText.includes(searchText);
+	});
 
 	return filteredPlaces.sort((a, b) => {
 		if (sortMode === "city") {
@@ -788,7 +963,7 @@ function renderPlaceList() {
 		.map((place) => {
 			const category = place.categories[0] || "Hely";
 			const image = place.image
-				? `<img src="${escapeHtml(place.image)}" alt="" loading="lazy">`
+				? `<img src="${escapeHtml(place.image)}" alt="" loading="lazy" decoding="async">`
 				: `<div class="list-place-placeholder">${escapeHtml((CATEGORY_MARKER_CONFIG[category] || DEFAULT_MARKER_CONFIG).symbol)}</div>`;
 			const freeBadge = place.isFree ? `<span class="list-free-badge">Ingyenes</span>` : "";
 
@@ -1109,10 +1284,9 @@ function renderMonthlyEvents() {
 	const visibleEventCount = groups.annualEvents.length + groups.recurringEvents.length + groups.upcomingEvents.length;
 
 	desktopEventsTitle.textContent = title;
-	mobileEventsTitle.textContent = title;
 	desktopEventCount.textContent = visibleEventCount;
+	mobileEventCount.textContent = visibleEventCount;
 	renderEventCards(desktopEventsList, groups);
-	renderEventCards(mobileEventsList, groups);
 }
 
 function getEventDetailsDateHtml(event) {
@@ -1141,6 +1315,7 @@ function openEventDetails(event, place = null) {
 	detailsPanel.dataset.eventId = String(event.id);
 	detailsPanel.classList.add("open");
 	detailsPanel.setAttribute("aria-hidden", "false");
+	document.body.classList.add("details-open");
 
 	if (isMobilePortrait()) {
 		detailsPanel.classList.remove("expanded");
@@ -1150,7 +1325,7 @@ function openEventDetails(event, place = null) {
 	}
 
 	const eventImage = event.image
-		? `<img class="place-image event-detail-image" src="${escapeHtml(event.image)}" alt="${escapeHtml(event.title)}">`
+		? `<img class="place-image event-detail-image" src="${escapeHtml(event.image)}" alt="${escapeHtml(event.title)}" loading="lazy" decoding="async">`
 		: "";
 	const summaryClass = event.image ? "has-image" : "no-image";
 	const cityLabel = place?.city || "Esemény";
@@ -1230,19 +1405,21 @@ function focusEvent(eventId) {
 }
 
 function setDesktopEventsOpen(isOpen) {
-	if (isMobile()) {
-		isOpen = false;
-	}
-
 	desktopEventsPanel.classList.toggle("open", isOpen);
 	desktopEventsPanel.setAttribute("aria-hidden", String(!isOpen));
 	desktopEventsButton.classList.toggle("active", isOpen);
 	desktopEventsButton.setAttribute("aria-expanded", String(isOpen));
+	mobileEventsButton.classList.toggle("active", isOpen);
+	mobileEventsButton.setAttribute("aria-expanded", String(isOpen));
+	document.body.classList.toggle("events-open", isOpen);
 
 	if (isOpen) {
+		setMobileMenuOpen(false);
 		setListOpen(false);
 		closePlaceDetails();
 	}
+
+	updateUiBackdrop();
 }
 
 // Panels
@@ -1271,7 +1448,8 @@ function setMobileMenuOpen(isOpen) {
 function updateUiBackdrop() {
 	const shouldShow = isMobile() && (
 		filterPanel.classList.contains("mobile-open") ||
-		listPanel.classList.contains("open")
+		listPanel.classList.contains("open") ||
+		desktopEventsPanel.classList.contains("open")
 	);
 
 	uiBackdrop.classList.toggle("open", shouldShow);
@@ -1286,7 +1464,7 @@ function closeTransientPanels() {
 
 // Details
 function getMobileSheetMetrics() {
-	const viewportHeight = window.visualViewport?.height || window.innerHeight;
+	const viewportHeight = getStableViewportHeight();
 	const expandedHeight = Math.max(SHEET_COLLAPSED_HEIGHT, viewportHeight - SHEET_TOP_GAP);
 
 	return {
@@ -1355,7 +1533,7 @@ function getPlaceImageHtml(place) {
 		return `<div class="place-image place-image-placeholder" aria-hidden="true">${symbol}</div>`;
 	}
 
-	return `<img class="place-image" src="${escapeHtml(place.image)}" alt="${escapeHtml(place.name)}">`;
+	return `<img class="place-image" src="${escapeHtml(place.image)}" alt="${escapeHtml(place.name)}" loading="lazy" decoding="async">`;
 }
 
 function getNextMonthlyOccurrence(event, referenceDate = new Date()) {
@@ -1476,6 +1654,7 @@ function openPlaceDetails(placeId, options = {}) {
 	detailsPanel.dataset.eventId = "";
 	detailsPanel.classList.add("open");
 	detailsPanel.setAttribute("aria-hidden", "false");
+	document.body.classList.add("details-open");
 
 	if (isMobilePortrait()) {
 		detailsPanel.classList.remove("expanded");
@@ -1552,6 +1731,7 @@ function closePlaceDetails() {
 	detailsSheetProgress = 0;
 	detailsPanel.classList.remove("dragging", "drag-ready", "expanded", "open");
 	detailsPanel.setAttribute("aria-hidden", "true");
+	document.body.classList.remove("details-open");
 	detailsDragHintText.textContent = "Húzd fel a részletekhez";
 	detailsBackdrop.classList.remove("open");
 	detailsBackdrop.setAttribute("aria-hidden", "true");
@@ -1742,6 +1922,23 @@ function finishDetailsDrag(event) {
 
 // Events
 function handleFilterClick(event) {
+	const listCategoryButton = event.target.closest("[data-list-category-filter]");
+	if (listCategoryButton) {
+		toggleListCategory(listCategoryButton.dataset.listCategoryFilter);
+		return;
+	}
+
+	const listPriceButton = event.target.closest("[data-list-price-level]");
+	if (listPriceButton) {
+		toggleListPriceLevel(listPriceButton.dataset.listPriceLevel);
+		return;
+	}
+
+	if (event.target.closest("[data-list-free-filter]")) {
+		toggleListFreeOnly();
+		return;
+	}
+
 	const filterChip = event.target.closest("[data-filter-chip-type]");
 	if (filterChip) {
 		removeFilterChip(filterChip.dataset.filterChipType, filterChip.dataset.filterChipValue);
@@ -1767,20 +1964,25 @@ function handleFilterClick(event) {
 
 document.addEventListener("click", handleFilterClick);
 
-placeSearchInput.addEventListener("input", renderPlaceSearchResults);
-placeSearchResults.addEventListener("click", (event) => {
-	const resultButton = event.target.closest("[data-search-place-id]");
-	if (resultButton) {
-		selectPlaceFromSearch(Number(resultButton.dataset.searchPlaceId));
-	}
+const renderMobileSearchResults = debounce(() => renderPlaceSearchResults(placeSearchInput, placeSearchResults));
+const renderDesktopSearchResults = debounce(() => renderPlaceSearchResults(desktopPlaceSearchInput, desktopPlaceSearchResults));
+const renderListSearchResults = debounce(renderPlaceList);
+
+placeSearchInput.addEventListener("input", renderMobileSearchResults);
+desktopPlaceSearchInput.addEventListener("input", renderDesktopSearchResults);
+
+[[placeSearchInput, placeSearchResults], [desktopPlaceSearchInput, desktopPlaceSearchResults]].forEach(([input, results]) => {
+	results.addEventListener("click", (event) => {
+		const resultButton = event.target.closest("[data-search-place-id]");
+		if (resultButton) {
+			selectPlaceFromSearch(Number(resultButton.dataset.searchPlaceId));
+		}
+	});
 });
 
-resetFiltersButton.addEventListener("click", clearActiveFilters);
-mobileResetFiltersButton.addEventListener("click", clearActiveFilters);
-listClearFiltersButton.addEventListener("click", clearActiveFilters);
 mapEmptyResetButton.addEventListener("click", clearActiveFilters);
 
-listSearchInput.addEventListener("input", renderPlaceList);
+listSearchInput.addEventListener("input", renderListSearchResults);
 listSortSelect.addEventListener("change", renderPlaceList);
 placesListView.addEventListener("click", (event) => {
 	const button = event.target.closest("[data-list-place-id]");
@@ -1795,22 +1997,8 @@ placesListView.addEventListener("click", (event) => {
 });
 
 mobileMenuButton.addEventListener("click", () => {
-	const willOpen = !filterPanel.classList.contains("mobile-open");
-	if (willOpen && isMobileLandscape()) {
-		setLandscapeMenuTab("filters");
-	}
-	setMobileMenuOpen(willOpen);
+	setMobileMenuOpen(!filterPanel.classList.contains("mobile-open"));
 });
-mobileSearchButton.addEventListener("click", () => {
-	setLandscapeMenuTab("filters");
-	setMobileMenuOpen(true);
-	setTimeout(() => placeSearchInput.focus(), 360);
-});
-
-landscapeMenuTabs.forEach((button) => {
-	button.addEventListener("click", () => setLandscapeMenuTab(button.dataset.landscapeMenuTab));
-});
-mobileShowMapButton.addEventListener("click", () => setMobileMenuOpen(false));
 
 mobileListButton.addEventListener("click", () => {
 	setListOpen(!listPanel.classList.contains("open"));
@@ -1820,18 +2008,19 @@ desktopListButton.addEventListener("click", () => {
 });
 closeListButton.addEventListener("click", () => setListOpen(false));
 
+mobileEventsButton.addEventListener("click", () => {
+	setDesktopEventsOpen(!desktopEventsPanel.classList.contains("open"));
+});
 desktopEventsButton.addEventListener("click", () => {
 	setDesktopEventsOpen(!desktopEventsPanel.classList.contains("open"));
 });
 desktopEventsClose.addEventListener("click", () => setDesktopEventsOpen(false));
 
-[desktopEventsList, mobileEventsList].forEach((container) => {
-	container.addEventListener("click", (event) => {
-		const button = event.target.closest("[data-event-focus-id]");
-		if (button && !button.disabled) {
-			focusEvent(Number(button.dataset.eventFocusId));
-		}
-	});
+desktopEventsList.addEventListener("click", (event) => {
+	const button = event.target.closest("[data-event-focus-id]");
+	if (button && !button.disabled) {
+		focusEvent(Number(button.dataset.eventFocusId));
+	}
 });
 
 uiBackdrop.addEventListener("click", closeTransientPanels);
@@ -1888,12 +2077,14 @@ map.getContainer().addEventListener("pointerdown", (event) => {
 	if (!interactive && isMobile()) {
 		setMobileMenuOpen(false);
 		setListOpen(false);
+		setDesktopEventsOpen(false);
 	}
 }, { passive: true });
 
 document.addEventListener("click", (event) => {
-	if (!event.target.closest(".map-search")) {
+	if (!event.target.closest(".map-search") && !event.target.closest(".desktop-search-dock")) {
 		placeSearchResults.classList.add("hidden");
+		desktopPlaceSearchResults.classList.add("hidden");
 	}
 });
 
@@ -1925,6 +2116,11 @@ document.addEventListener("keydown", (event) => {
 
 window.addEventListener("resize", () => {
 	updateVisualViewport();
+
+	if (document.body.classList.contains("keyboard-open")) {
+		return;
+	}
+
 	detailsDragging = false;
 	clearDetailsDragStyles();
 
@@ -1933,9 +2129,6 @@ window.addEventListener("resize", () => {
 		updateUiBackdrop();
 	}
 
-	if (isMobile()) {
-		setDesktopEventsOpen(false);
-	}
 
 	if (!isMobilePortrait()) {
 		detailsPanel.classList.remove("expanded");
@@ -1949,11 +2142,21 @@ window.addEventListener("resize", () => {
 // Init
 window.openPlaceDetails = openPlaceDetails;
 
-updateVisualViewport();
-window.visualViewport?.addEventListener("resize", updateVisualViewport);
-window.visualViewport?.addEventListener("scroll", updateVisualViewport);
-window.addEventListener("orientationchange", () => setTimeout(updateVisualViewport, 120));
-setLandscapeMenuTab("filters");
+setupScrollFade(placesListView);
+setupScrollFade(desktopEventsList);
+setupScrollFade(document.querySelector(".mobile-menu-controls"));
+
+updateVisualViewport({ force: true });
+window.visualViewport?.addEventListener("resize", () => updateVisualViewport());
+window.visualViewport?.addEventListener("scroll", () => updateVisualViewport());
+window.addEventListener("orientationchange", () => {
+	stableViewportHeight = 0;
+	window.setTimeout(() => updateVisualViewport({ force: true }), 180);
+});
+
+document.addEventListener("focusout", () => {
+	window.setTimeout(() => updateVisualViewport({ force: true }), 120);
+});
 
 async function initializeApp() {
 	try {
@@ -1969,7 +2172,7 @@ async function initializeApp() {
 
 		map.invalidateSize();
 	} finally {
-		loadingSkeleton.classList.add("hidden");
+		loadingIndicator.classList.add("hidden");
 	}
 }
 
