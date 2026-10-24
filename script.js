@@ -1,6 +1,6 @@
 // Config
 const MOBILE_BREAKPOINT = 768;
-const LANDSCAPE_BREAKPOINT = 900;
+const LANDSCAPE_BREAKPOINT = 1180;
 const SHEET_COLLAPSED_HEIGHT = 200;
 const SHEET_TOP_GAP = 80;
 const DRAG_TAP_THRESHOLD = 8;
@@ -191,7 +191,9 @@ function isMobile() {
 }
 
 function isMobileLandscape() {
-	return window.innerWidth <= LANDSCAPE_BREAKPOINT && window.matchMedia("(orientation: landscape)").matches;
+	const isLandscape = window.matchMedia("(orientation: landscape)").matches;
+	const hasCoarsePointer = window.matchMedia("(pointer: coarse)").matches;
+	return window.innerWidth <= LANDSCAPE_BREAKPOINT && isLandscape && (hasCoarsePointer || window.innerWidth <= MOBILE_BREAKPOINT);
 }
 
 function isMobilePortrait() {

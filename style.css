@@ -1347,7 +1347,7 @@ body.list-open .leaflet-top.leaflet-left {
 
 /* Mobile */
 
-@media (max-width: 768px), (max-width: 900px) and (orientation: landscape) {
+@media (max-width: 768px), (max-width: 1180px) and (orientation: landscape) and (pointer: coarse) {
 	.topbar {
 		display: none;
 	}
@@ -1423,6 +1423,13 @@ body.list-open .leaflet-top.leaflet-left {
 	.mobile-icon-button:active,
 	.mobile-nav-button:active {
 		transform: scale(0.95);
+	}
+
+	/* iOS focus zoom */
+	input,
+	select,
+	textarea {
+		font-size: 16px;
 	}
 
 	.mobile-icon-button.active,
@@ -1706,7 +1713,7 @@ body.list-open .leaflet-top.leaflet-left {
 
 /* Landscape */
 
-@media (max-width: 900px) and (orientation: landscape) {
+@media (max-width: 1180px) and (orientation: landscape) and (pointer: coarse) {
 	:root {
 		--landscape-list-width: min(440px, 48vw);
 		--landscape-events-width: min(390px, 44vw);
@@ -2567,20 +2574,20 @@ body.list-open .leaflet-top.leaflet-left {
 
 /* Panel sizing */
 
-@media (max-width: 768px), (max-width: 900px) and (orientation: landscape) {
+@media (max-width: 768px), (max-width: 1180px) and (orientation: landscape) and (pointer: coarse) {
 	.desktop-events-panel {
 		max-height: none;
 	}
 }
 
-@media (max-width: 900px) and (orientation: landscape) {
+@media (max-width: 1180px) and (orientation: landscape) and (pointer: coarse) {
 	.desktop-events-panel {
 		max-height: calc(var(--visual-viewport-height) - 12px);
 	}
 }
 
 /* Desktop polish */
-@media (min-width: 901px) {
+@media (min-width: 901px) and (hover: hover) and (pointer: fine) {
 	.topbar {
 		z-index: 650;
 		justify-content: flex-start;
@@ -2743,7 +2750,7 @@ body.list-open .leaflet-top.leaflet-left {
 }
 
 /* Smaller desktop */
-@media (min-width: 901px) and (max-width: 1180px) {
+@media (min-width: 901px) and (max-width: 1180px) and (hover: hover) and (pointer: fine) {
 	.topbar-brand {
 		flex-basis: 300px;
 	}
@@ -2809,7 +2816,7 @@ body.list-open .leaflet-top.leaflet-left {
 	font-weight: 850;
 }
 
-@media (max-width: 900px) and (orientation: landscape) {
+@media (max-width: 1180px) and (orientation: landscape) and (pointer: coarse) {
 	.filter-panel .free-filter-button {
 		width: 42px;
 		height: 34px;
@@ -2887,11 +2894,6 @@ select:focus-visible,
 		inset 0 -14px 12px -14px rgba(0, 0, 0, 0.72);
 }
 
-.list-place-card,
-.event-card {
-	content-visibility: auto;
-	contain-intrinsic-size: 110px;
-}
 
 .list-sort-field select,
 .list-sort-field select option {
@@ -2907,7 +2909,7 @@ select:focus-visible,
 	top: calc(100% + 12px);
 }
 
-@media (min-width: 901px) {
+@media (min-width: 901px) and (hover: hover) and (pointer: fine) {
 	.desktop-filter-wrap {
 		position: relative;
 	}
@@ -2919,7 +2921,7 @@ select:focus-visible,
 	}
 }
 
-@media (max-width: 900px) and (orientation: landscape) {
+@media (max-width: 1180px) and (orientation: landscape) and (pointer: coarse) {
 	:root {
 		--landscape-filter-width: 66px;
 	}
@@ -3219,7 +3221,7 @@ select:focus-visible,
 }
 
 /* Mobile list */
-@media (max-width: 900px) {
+@media (max-width: 768px), (max-width: 1180px) and (orientation: landscape) and (pointer: coarse) {
 	.list-filter-row {
 		padding-top: 10px;
 		transition: padding-bottom 0.24s cubic-bezier(0.22, 1, 0.36, 1);
@@ -3361,7 +3363,7 @@ select:focus-visible,
 	}
 }
 
-@media (max-width: 900px) and (orientation: landscape) {
+@media (max-width: 1180px) and (orientation: landscape) and (pointer: coarse) {
 	.filter-panel:not(.mobile-open) .price-filter-section {
 		opacity: 0;
 		visibility: hidden;
