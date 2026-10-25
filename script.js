@@ -180,6 +180,14 @@ function debounce(callback, delay = 110) {
 	};
 }
 
+function trackAnalyticsEvent(name, data = {}) {
+	if (!window.umami?.track) {
+		return;
+	}
+
+	window.umami.track(name, data);
+}
+
 function isEditableElement(element = document.activeElement) {
 	return element instanceof HTMLElement && (
 		element.matches("input, textarea, select") || element.isContentEditable
@@ -678,6 +686,7 @@ function toggleCategory(category) {
 		selectedCategories.add(category);
 	}
 
+	trackAnalyticsEvent("category_filter", { category, enabled: selectedCategories.has(category) });
 	applyFilters();
 }
 
@@ -688,11 +697,13 @@ function togglePriceLevel(priceLevel) {
 		selectedPriceLevels.add(priceLevel);
 	}
 
+	trackAnalyticsEvent("price_filter", { level: priceLevel, enabled: selectedPriceLevels.has(priceLevel) });
 	applyFilters();
 }
 
 function toggleFreeOnly() {
 	freeOnly = !freeOnly;
+	trackAnalyticsEvent("free_filter", { enabled: freeOnly });
 	applyFilters();
 }
 
@@ -722,6 +733,7 @@ function toggleListCategory(category) {
 		listSelectedCategories.add(category);
 	}
 
+	trackAnalyticsEvent("list_category_filter", { category, enabled: listSelectedCategories.has(category) });
 	syncListFilterControls();
 	renderPlaceList();
 }
@@ -733,12 +745,14 @@ function toggleListPriceLevel(priceLevel) {
 		listSelectedPriceLevels.add(priceLevel);
 	}
 
+	trackAnalyticsEvent("list_price_filter", { level: priceLevel, enabled: listSelectedPriceLevels.has(priceLevel) });
 	syncListFilterControls();
 	renderPlaceList();
 }
 
 function toggleListFreeOnly() {
 	listFreeOnly = !listFreeOnly;
+	trackAnalyticsEvent("list_free_filter", { enabled: listFreeOnly });
 	syncListFilterControls();
 	renderPlaceList();
 }
@@ -904,6 +918,8 @@ function selectPlaceFromSearch(placeId) {
 		return;
 	}
 
+	trackAnalyticsEvent("search_result_open", { category: place.categories[0] || "Hely" });
+
 	selectedCategories.clear();
 	selectedPriceLevels.clear();
 	freeOnly = false;
@@ -997,6 +1013,7 @@ function setListOpen(isOpen) {
 	document.body.classList.toggle("list-open", isOpen);
 
 	if (isOpen) {
+		trackAnalyticsEvent("list_open");
 		setMobileMenuOpen(false);
 		setDesktopEventsOpen(false);
 		if (isMobile()) {
@@ -1309,6 +1326,8 @@ function openEventDetails(event, place = null) {
 		return;
 	}
 
+	trackAnalyticsEvent("event_open", { recurrence: event.recurrenceType || "unknown" });
+
 	setSelectedMarker(null);
 	setMobileMenuOpen(false);
 	setDesktopEventsOpen(false);
@@ -1416,6 +1435,7 @@ function setDesktopEventsOpen(isOpen) {
 	document.body.classList.toggle("events-open", isOpen);
 
 	if (isOpen) {
+		trackAnalyticsEvent("events_open");
 		setMobileMenuOpen(false);
 		setListOpen(false);
 		closePlaceDetails();
@@ -1435,6 +1455,7 @@ function setMobileMenuOpen(isOpen) {
 	document.body.classList.toggle("mobile-menu-open", isOpen);
 
 	if (isOpen) {
+		trackAnalyticsEvent("filter_open");
 		setListOpen(false);
 		setDesktopEventsOpen(false);
 		closePlaceDetails();
@@ -1642,6 +1663,8 @@ function openPlaceDetails(placeId, options = {}) {
 	if (!place) {
 		return;
 	}
+
+	trackAnalyticsEvent("place_open", { category: place.categories[0] || "Hely" });
 
 	const { preserveEventMarker = false, panMap = true } = options;
 	if (!preserveEventMarker) {
@@ -1985,7 +2008,10 @@ desktopPlaceSearchInput.addEventListener("input", renderDesktopSearchResults);
 mapEmptyResetButton.addEventListener("click", clearActiveFilters);
 
 listSearchInput.addEventListener("input", renderListSearchResults);
-listSortSelect.addEventListener("change", renderPlaceList);
+listSortSelect.addEventListener("change", () => {
+	trackAnalyticsEvent("list_sort", { mode: listSortSelect.value });
+	renderPlaceList();
+});
 placesListView.addEventListener("click", (event) => {
 	const button = event.target.closest("[data-list-place-id]");
 	if (!button) {
