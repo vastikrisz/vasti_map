@@ -157,6 +157,20 @@ const mapEmptyState = document.getElementById("mapEmptyState");
 const mapEmptyResetButton = document.getElementById("mapEmptyResetButton");
 const loadingIndicator = document.getElementById("loadingIndicator");
 
+const helpButton = document.getElementById("helpButton");
+const onboardingOverlay = document.getElementById("onboardingOverlay");
+const onboardingContent = document.getElementById("onboardingContent");
+const onboardingClose = document.getElementById("onboardingClose");
+const onboardingBack = document.getElementById("onboardingBack");
+const onboardingNext = document.getElementById("onboardingNext");
+const onboardingProgress = document.getElementById("onboardingProgress");
+const onboardingPages = Array.from(document.querySelectorAll("[data-onboarding-page]"));
+const appRoot = document.querySelector(".app");
+
+const ONBOARDING_STORAGE_KEY = "vasti_onboarding_seen_v1";
+let onboardingPageIndex = 0;
+let onboardingSource = "first_visit";
+
 // Helpers
 function escapeHtml(value) {
 	return String(value ?? "")
@@ -186,6 +200,74 @@ function trackAnalyticsEvent(name, data = {}) {
 	}
 
 	window.umami.track(name, data);
+}
+
+function hasSeenOnboarding() {
+	try {
+		return window.localStorage.getItem(ONBOARDING_STORAGE_KEY) === "1";
+	} catch {
+		return false;
+	}
+}
+
+function markOnboardingSeen() {
+	try {
+		window.localStorage.setItem(ONBOARDING_STORAGE_KEY, "1");
+	} catch {
+		// Storage may be unavailable in private/restricted contexts.
+	}
+}
+
+function renderOnboardingPage(index) {
+	onboardingPageIndex = clamp(index, 0, onboardingPages.length - 1);
+
+	onboardingPages.forEach((page, pageIndex) => {
+		const isActive = pageIndex === onboardingPageIndex;
+		page.classList.toggle("active", isActive);
+		page.setAttribute("aria-hidden", String(!isActive));
+	});
+
+	Array.from(onboardingProgress.children).forEach((dot, dotIndex) => {
+		dot.classList.toggle("active", dotIndex === onboardingPageIndex);
+	});
+
+	onboardingProgress.setAttribute("aria-label", `Bemutató ${onboardingPageIndex + 1} / ${onboardingPages.length}`);
+	onboardingBack.disabled = onboardingPageIndex === 0;
+	onboardingBack.classList.toggle("is-hidden", onboardingPageIndex === 0);
+	onboardingNext.textContent = onboardingPageIndex === onboardingPages.length - 1 ? "Térkép megnyitása" : "Tovább →";
+	onboardingContent.scrollTop = 0;
+}
+
+function openOnboarding(source = "help") {
+	onboardingSource = source;
+	renderOnboardingPage(0);
+	onboardingOverlay.classList.add("open");
+	onboardingOverlay.setAttribute("aria-hidden", "false");
+	document.body.classList.add("onboarding-open");
+	appRoot?.setAttribute("inert", "");
+	window.setTimeout(() => onboardingClose.focus(), 40);
+	trackAnalyticsEvent("onboarding_open", { source });
+}
+
+function closeOnboarding({ completed = false } = {}) {
+	if (!onboardingOverlay.classList.contains("open")) {
+		return;
+	}
+
+	markOnboardingSeen();
+	onboardingOverlay.classList.remove("open");
+	onboardingOverlay.setAttribute("aria-hidden", "true");
+	document.body.classList.remove("onboarding-open");
+	appRoot?.removeAttribute("inert");
+
+	trackAnalyticsEvent(completed ? "onboarding_complete" : "onboarding_close", {
+		source: onboardingSource,
+		page: onboardingPageIndex + 1
+	});
+
+	if (onboardingSource === "help") {
+		helpButton.focus();
+	}
 }
 
 function isEditableElement(element = document.activeElement) {
@@ -2024,6 +2106,18 @@ placesListView.addEventListener("click", (event) => {
 	}
 });
 
+helpButton.addEventListener("click", () => openOnboarding("help"));
+onboardingClose.addEventListener("click", () => closeOnboarding());
+onboardingBack.addEventListener("click", () => renderOnboardingPage(onboardingPageIndex - 1));
+onboardingNext.addEventListener("click", () => {
+	if (onboardingPageIndex < onboardingPages.length - 1) {
+		renderOnboardingPage(onboardingPageIndex + 1);
+		return;
+	}
+
+	closeOnboarding({ completed: true });
+});
+
 mobileMenuButton.addEventListener("click", () => {
 	setMobileMenuOpen(!filterPanel.classList.contains("mobile-open"));
 });
@@ -2121,6 +2215,11 @@ document.addEventListener("keydown", (event) => {
 		return;
 	}
 
+	if (onboardingOverlay.classList.contains("open")) {
+		closeOnboarding();
+		return;
+	}
+
 	if (imageLightbox.classList.contains("open")) {
 		closeImageLightbox();
 		return;
@@ -2199,6 +2298,10 @@ async function initializeApp() {
 		}
 
 		map.invalidateSize();
+
+		if (!hasSeenOnboarding()) {
+			window.setTimeout(() => openOnboarding("first_visit"), 280);
+		}
 	} finally {
 		loadingIndicator.classList.add("hidden");
 	}

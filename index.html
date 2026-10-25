@@ -4,6 +4,19 @@
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=overlays-content">
 		<title>Vasti térképe</title>
+		<meta name="description" content="Személyesen válogatott helyek és programok egy interaktív térképen – ötletek hétvégére, kiránduláshoz és szabadidőhöz.">
+		<meta property="og:title" content="Vasti Map – Hova a picsába menjünk?">
+		<meta property="og:description" content="Személyesen válogatott helyek és programok egy interaktív térképen – ötletek hétvégére, kiránduláshoz és szabadidőhöz.">
+		<meta property="og:type" content="website">
+		<meta property="og:url" content="https://vastikrisz.github.io/vasti_map/">
+		<meta property="og:image" content="https://vastikrisz.github.io/vasti_map/assets/social-preview.png">
+		<meta property="og:image:width" content="1200">
+		<meta property="og:image:height" content="630">
+		<meta property="og:locale" content="hu_HU">
+		<meta name="twitter:card" content="summary_large_image">
+		<meta name="twitter:title" content="Vasti Map – Hova a picsába menjünk?">
+		<meta name="twitter:description" content="Személyesen válogatott helyek és programok egy interaktív térképen.">
+		<meta name="twitter:image" content="https://vastikrisz.github.io/vasti_map/assets/social-preview.png">
 		<script defer src="https://cloud.umami.is/script.js" data-website-id="582f0f08-bdea-4f9f-a26f-2271e3f69b02" data-domains="vastikrisz.github.io"></script>
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
@@ -233,6 +246,63 @@
 				<img id="imageLightboxImage" class="image-lightbox-image" src="" alt="">
 			</div>
 		</main>
+
+		<!-- Help -->
+		<button id="helpButton" class="help-button" type="button" aria-label="Súgó megnyitása" title="Súgó">?</button>
+
+		<!-- Onboarding -->
+		<div id="onboardingOverlay" class="onboarding-overlay" aria-hidden="true">
+			<section class="onboarding-dialog" role="dialog" aria-modal="true" aria-label="Vasti Map bemutató">
+				<button id="onboardingClose" class="onboarding-close" type="button" aria-label="Bemutató bezárása">×</button>
+
+				<div id="onboardingContent" class="onboarding-content">
+					<article class="onboarding-page active" data-onboarding-page="0">
+						<span class="onboarding-eyebrow">Vasti Map</span>
+						<h2 id="onboardingTitle">Üdv a Vasti Mapen! <span aria-hidden="true">👋</span></h2>
+						<p>A Vasti Map azért született, mert szerettem volna egy olyan térképet, amit teljesen a saját igényeim szerint tudok alakítani.</p>
+						<p>A Google Maps nagyon jó a hétköznapi tájékozódáshoz, de ha azt keresed, hogy <strong>mit lehetne csinálni hétvégén</strong>, könnyű elveszni a rengeteg cég, értékelés és irreleváns találat között.</p>
+						<p>Itt nincs szükség arra, hogy minden felkerüljön, ami létezik. A Vasti Mapre csak olyan helyeket és programokat gyűjtök össze, amelyek szerintem tényleg jó ötletet adhatnak egy szabad délutánhoz, hétvégéhez vagy kiránduláshoz.</p>
+						<p>A válogatást én készítem, a helyeket egyenként keresem ki és töltöm fel, ezért a térkép nem egy teljes adatbázis, hanem egy folyamatosan bővülő személyes gyűjtemény. Emiatt lehetnek olyan helyek, amelyek még hiányoznak, vagy végül nem kerülnek fel.</p>
+						<p>Az oldalt egyedül készítem és tartom karban, de igyekszem folyamatosan bővíteni: általában szinte minden nap kerül fel valami új hely vagy esemény.</p>
+						<p class="onboarding-note">Addig is légy egy kis türelemmel velem – a Vasti Map napról napra egyre nagyobbra növi ki magát. <span aria-hidden="true">😊</span></p>
+					</article>
+
+					<article class="onboarding-page" data-onboarding-page="1" aria-hidden="true">
+						<span class="onboarding-eyebrow">Felfedezés</span>
+						<h2>Hogyan használd?</h2>
+						<div class="onboarding-feature-grid">
+							<div class="onboarding-feature"><span class="onboarding-feature-icon" aria-hidden="true">🗺️</span><div><strong>Fedezd fel a térképet</strong><p>Kattints egy markerre, és nézd meg a hely részleteit, képeit és fontosabb információit.</p></div></div>
+							<div class="onboarding-feature"><span class="onboarding-feature-icon" aria-hidden="true">☰</span><div><strong>Böngéssz listában</strong><p>Keress név szerint, rendezd a találatokat, vagy böngéssz a helyek között.</p></div></div>
+							<div class="onboarding-feature"><span class="onboarding-feature-icon" aria-hidden="true">▽</span><div><strong>Szűrj kedved szerint</strong><p>Válogass múzeumok, kajáldák, kirándulóhelyek, várak, ingyenes helyek és más kategóriák között.</p></div></div>
+							<div class="onboarding-feature"><span class="onboarding-feature-icon" aria-hidden="true">📅</span><div><strong>Nézd meg az eseményeket</strong><p>Aktuális, időszakos és rendszeresen ismétlődő programokat is találsz a térképen.</p></div></div>
+						</div>
+					</article>
+
+					<article class="onboarding-page" data-onboarding-page="2" aria-hidden="true">
+						<span class="onboarding-eyebrow">Következő lépés</span>
+						<h2>A Vasti Map még fejlődik</h2>
+						<p>A következő nagyobb fejlesztés a felhasználói fiókok bevezetése lesz. Jóváhagyott fiókkal később több személyes és közösségi funkció is elérhető lesz.</p>
+						<div class="onboarding-feature-grid account-features">
+							<div class="onboarding-feature compact"><span class="onboarding-feature-icon" aria-hidden="true">❤️</span><div><strong>Kedvencek</strong><p>Mentsd el azokat a helyeket, ahová később szeretnél elmenni.</p></div></div>
+							<div class="onboarding-feature compact"><span class="onboarding-feature-icon" aria-hidden="true">✓</span><div><strong>Meglátogatott helyek</strong><p>Jelöld meg, mely helyeket fedezted már fel.</p></div></div>
+							<div class="onboarding-feature compact"><span class="onboarding-feature-icon" aria-hidden="true">👤</span><div><strong>Saját profil</strong><p>Használj becenevet és saját profilképet.</p></div></div>
+							<div class="onboarding-feature compact"><span class="onboarding-feature-icon" aria-hidden="true">👥</span><div><strong>Közösség</strong><p>Lásd, kik jártak már egy adott helyen.</p></div></div>
+							<div class="onboarding-feature compact"><span class="onboarding-feature-icon" aria-hidden="true">💬</span><div><strong>Visszajelzés</strong><p>Jelezz hibát, ajánlj új helyet vagy küldj egyéb visszajelzést.</p></div></div>
+							<div class="onboarding-feature compact"><span class="onboarding-feature-icon" aria-hidden="true">⚙️</span><div><strong>Személyre szabás</strong><p>Állíts be néhány saját térképes és felhasználói beállítást.</p></div></div>
+						</div>
+						<p class="onboarding-note">A felhasználói fiókok kezdetben tesztüzemben, korlátozottan és adminisztrátori jóváhagyással lesznek elérhetők.</p>
+					</article>
+				</div>
+
+				<footer class="onboarding-footer">
+					<button id="onboardingBack" class="onboarding-secondary-button" type="button">← Vissza</button>
+					<div id="onboardingProgress" class="onboarding-progress" aria-label="Bemutató 1 / 3">
+						<span class="active"></span><span></span><span></span>
+					</div>
+					<button id="onboardingNext" class="onboarding-primary-button" type="button">Tovább →</button>
+				</footer>
+			</section>
+		</div>
 
 		<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 		<script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
