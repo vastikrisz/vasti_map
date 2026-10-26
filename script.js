@@ -7,6 +7,10 @@ const DRAG_TAP_THRESHOLD = 8;
 const DRAG_CLOSE_THRESHOLD = 65;
 const DRAG_EXPAND_SNAP = 0.28;
 const DRAG_COLLAPSE_SNAP = 0.72;
+const LIST_BATCH_SIZE = 24;
+const LIST_PREFETCH_DISTANCE = 720;
+const MARKER_KEEP_ALL_THRESHOLD = 300;
+const IS_COARSE_POINTER = window.matchMedia("(pointer: coarse)").matches;
 
 const CATEGORY_MARKER_CONFIG = {
 	"Állatkert": { symbol: "🐾", color: "#2f9e62" },
@@ -71,6 +75,9 @@ let listFreeOnly = false;
 const placeById = new Map();
 const markerByPlaceId = new Map();
 const visibleMarkerIds = new Set();
+const categoryMarkerIconCache = new Map();
+let currentListPlaces = [];
+let listRenderedCount = 0;
 
 // Map
 const map = L.map("map", {
@@ -88,7 +95,11 @@ const markerLayer = L.markerClusterGroup({
 	showCoverageOnHover: false,
 	zoomToBoundsOnClick: true,
 	spiderfyOnMaxZoom: true,
-	removeOutsideVisibleBounds: true,
+	removeOutsideVisibleBounds: false,
+	animate: !IS_COARSE_POINTER,
+	chunkedLoading: true,
+	chunkInterval: 80,
+	chunkDelay: 12,
 	maxClusterRadius: 55,
 	iconCreateFunction(cluster) {
 		const count = cluster.getChildCount();
@@ -314,7 +325,9 @@ function setupScrollFade(element) {
 		return;
 	}
 
+	let framePending = false;
 	const update = () => {
+		framePending = false;
 		const hasOverflow = element.scrollHeight > element.clientHeight + 2;
 		const atTop = element.scrollTop <= 2;
 		const atBottom = element.scrollTop + element.clientHeight >= element.scrollHeight - 2;
@@ -322,15 +335,23 @@ function setupScrollFade(element) {
 		element.classList.toggle("scroll-fade-top", hasOverflow && !atTop);
 		element.classList.toggle("scroll-fade-bottom", hasOverflow && !atBottom);
 	};
+	const scheduleUpdate = () => {
+		if (framePending) {
+			return;
+		}
 
-	element.addEventListener("scroll", update, { passive: true });
-	new ResizeObserver(update).observe(element);
-	new MutationObserver(() => requestAnimationFrame(update)).observe(element, {
+		framePending = true;
+		requestAnimationFrame(update);
+	};
+
+	element.addEventListener("scroll", scheduleUpdate, { passive: true });
+	new ResizeObserver(scheduleUpdate).observe(element);
+	new MutationObserver(scheduleUpdate).observe(element, {
 		childList: true,
 		subtree: true
 	});
 
-	requestAnimationFrame(update);
+	scheduleUpdate();
 }
 
 
@@ -487,6 +508,7 @@ async function loadPlaces() {
 	placeById.clear();
 	places.forEach((place) => placeById.set(place.id, place));
 	browseablePlaces = places.filter((place) => !place.isEventOnly);
+	markerLayer.options.removeOutsideVisibleBounds = browseablePlaces.length > MARKER_KEEP_ALL_THRESHOLD;
 
 	allCategories = [...new Set(getBrowseablePlaces().flatMap((place) => place.categories))]
 		.sort((a, b) => a.localeCompare(b, "hu"));
@@ -817,7 +839,7 @@ function toggleListCategory(category) {
 
 	trackAnalyticsEvent("list_category_filter", { category, enabled: listSelectedCategories.has(category) });
 	syncListFilterControls();
-	renderPlaceList();
+	renderPlaceList({ resetScroll: true });
 }
 
 function toggleListPriceLevel(priceLevel) {
@@ -829,22 +851,25 @@ function toggleListPriceLevel(priceLevel) {
 
 	trackAnalyticsEvent("list_price_filter", { level: priceLevel, enabled: listSelectedPriceLevels.has(priceLevel) });
 	syncListFilterControls();
-	renderPlaceList();
+	renderPlaceList({ resetScroll: true });
 }
 
 function toggleListFreeOnly() {
 	listFreeOnly = !listFreeOnly;
 	trackAnalyticsEvent("list_free_filter", { enabled: listFreeOnly });
 	syncListFilterControls();
-	renderPlaceList();
+	renderPlaceList({ resetScroll: true });
 }
 
 // Markers
 function getCategoryMarkerIcon(place) {
 	const primaryCategory = place.categories[0] || "";
-	const config = CATEGORY_MARKER_CONFIG[primaryCategory] || DEFAULT_MARKER_CONFIG;
+	if (categoryMarkerIconCache.has(primaryCategory)) {
+		return categoryMarkerIconCache.get(primaryCategory);
+	}
 
-	return L.divIcon({
+	const config = CATEGORY_MARKER_CONFIG[primaryCategory] || DEFAULT_MARKER_CONFIG;
+	const icon = L.divIcon({
 		className: "category-marker-wrapper",
 		html: `
 			<div class="category-marker-pin" style="--marker-color: ${config.color}">
@@ -854,6 +879,9 @@ function getCategoryMarkerIcon(place) {
 		iconSize: [38, 44],
 		iconAnchor: [19, 42]
 	});
+
+	categoryMarkerIconCache.set(primaryCategory, icon);
+	return icon;
 }
 
 function getEventMarkerIcon() {
@@ -1045,11 +1073,65 @@ function getListPlaces() {
 	});
 }
 
-function renderPlaceList() {
-	const listPlaces = getListPlaces();
-	listResultsCount.textContent = `${listPlaces.length} hely`;
+function getListPlaceCardHtml(place) {
+	const category = place.categories[0] || "Hely";
+	const image = place.image
+		? `<img src="${escapeHtml(place.image)}" alt="" loading="lazy" decoding="async" fetchpriority="low">`
+		: `<div class="list-place-placeholder">${escapeHtml((CATEGORY_MARKER_CONFIG[category] || DEFAULT_MARKER_CONFIG).symbol)}</div>`;
+	const freeBadge = place.isFree ? `<span class="list-free-badge">Ingyenes</span>` : "";
 
-	if (listPlaces.length === 0) {
+	return `
+		<button class="list-place-card" type="button" data-list-place-id="${place.id}">
+			<div class="list-place-image">${image}</div>
+			<div class="list-place-copy">
+				<strong>${escapeHtml(place.name)}</strong>
+				<span>${escapeHtml(place.city || place.address)}</span>
+				<div class="list-place-meta">
+					<small>${escapeHtml(category)}</small>
+					${freeBadge}
+				</div>
+			</div>
+			<span class="list-place-arrow">›</span>
+		</button>
+	`;
+}
+
+function appendNextListBatch() {
+	if (listRenderedCount >= currentListPlaces.length) {
+		return;
+	}
+
+	const nextIndex = Math.min(listRenderedCount + LIST_BATCH_SIZE, currentListPlaces.length);
+	const html = currentListPlaces
+		.slice(listRenderedCount, nextIndex)
+		.map(getListPlaceCardHtml)
+		.join("");
+
+	placesListView.insertAdjacentHTML("beforeend", html);
+	listRenderedCount = nextIndex;
+}
+
+function ensureListViewportFilled() {
+	if (listRenderedCount >= currentListPlaces.length) {
+		return;
+	}
+
+	if (placesListView.scrollHeight <= placesListView.clientHeight + LIST_PREFETCH_DISTANCE) {
+		appendNextListBatch();
+		requestAnimationFrame(ensureListViewportFilled);
+	}
+}
+
+function renderPlaceList({ resetScroll = false } = {}) {
+	currentListPlaces = getListPlaces();
+	listRenderedCount = 0;
+	listResultsCount.textContent = `${currentListPlaces.length} hely`;
+
+	if (resetScroll) {
+		placesListView.scrollTop = 0;
+	}
+
+	if (currentListPlaces.length === 0) {
 		placesListView.innerHTML = `
 			<div class="panel-empty-state">
 				<strong>Nincs találat.</strong>
@@ -1059,30 +1141,20 @@ function renderPlaceList() {
 		return;
 	}
 
-	placesListView.innerHTML = listPlaces
-		.map((place) => {
-			const category = place.categories[0] || "Hely";
-			const image = place.image
-				? `<img src="${escapeHtml(place.image)}" alt="" loading="lazy" decoding="async">`
-				: `<div class="list-place-placeholder">${escapeHtml((CATEGORY_MARKER_CONFIG[category] || DEFAULT_MARKER_CONFIG).symbol)}</div>`;
-			const freeBadge = place.isFree ? `<span class="list-free-badge">Ingyenes</span>` : "";
+	placesListView.innerHTML = "";
+	appendNextListBatch();
+	requestAnimationFrame(ensureListViewportFilled);
+}
 
-			return `
-				<button class="list-place-card" type="button" data-list-place-id="${place.id}">
-					<div class="list-place-image">${image}</div>
-					<div class="list-place-copy">
-						<strong>${escapeHtml(place.name)}</strong>
-						<span>${escapeHtml(place.city || place.address)}</span>
-						<div class="list-place-meta">
-							<small>${escapeHtml(category)}</small>
-							${freeBadge}
-						</div>
-					</div>
-					<span class="list-place-arrow">›</span>
-				</button>
-			`;
-		})
-		.join("");
+function handleListScrollPerformance() {
+	if (listRenderedCount >= currentListPlaces.length) {
+		return;
+	}
+
+	const remaining = placesListView.scrollHeight - placesListView.scrollTop - placesListView.clientHeight;
+	if (remaining <= LIST_PREFETCH_DISTANCE) {
+		appendNextListBatch();
+	}
 }
 
 function setListOpen(isOpen) {
@@ -1101,7 +1173,7 @@ function setListOpen(isOpen) {
 		if (isMobile()) {
 			closePlaceDetails();
 		}
-		renderPlaceList();
+		renderPlaceList({ resetScroll: true });
 	}
 
 	updateUiBackdrop();
@@ -2073,7 +2145,7 @@ document.addEventListener("click", handleFilterClick);
 
 const renderMobileSearchResults = debounce(() => renderPlaceSearchResults(placeSearchInput, placeSearchResults));
 const renderDesktopSearchResults = debounce(() => renderPlaceSearchResults(desktopPlaceSearchInput, desktopPlaceSearchResults));
-const renderListSearchResults = debounce(renderPlaceList);
+const renderListSearchResults = debounce(() => renderPlaceList({ resetScroll: true }));
 
 placeSearchInput.addEventListener("input", renderMobileSearchResults);
 desktopPlaceSearchInput.addEventListener("input", renderDesktopSearchResults);
@@ -2092,8 +2164,9 @@ mapEmptyResetButton.addEventListener("click", clearActiveFilters);
 listSearchInput.addEventListener("input", renderListSearchResults);
 listSortSelect.addEventListener("change", () => {
 	trackAnalyticsEvent("list_sort", { mode: listSortSelect.value });
-	renderPlaceList();
+	renderPlaceList({ resetScroll: true });
 });
+placesListView.addEventListener("scroll", handleListScrollPerformance, { passive: true });
 placesListView.addEventListener("click", (event) => {
 	const button = event.target.closest("[data-list-place-id]");
 	if (!button) {

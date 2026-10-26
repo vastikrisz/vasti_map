@@ -3296,24 +3296,18 @@ select:focus-visible,
 .places-list-view.scroll-fade-top,
 .desktop-events-panel > .events-list.scroll-fade-top,
 .mobile-menu-controls.scroll-fade-top {
-	-webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 34px, #000 100%);
-	mask-image: linear-gradient(to bottom, transparent 0, #000 34px, #000 100%);
 	box-shadow: inset 0 28px 22px -22px rgba(96, 165, 250, 0.48);
 }
 
 .places-list-view.scroll-fade-bottom,
 .desktop-events-panel > .events-list.scroll-fade-bottom,
 .mobile-menu-controls.scroll-fade-bottom {
-	-webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 34px), transparent 100%);
-	mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 34px), transparent 100%);
 	box-shadow: inset 0 -28px 22px -22px rgba(96, 165, 250, 0.48);
 }
 
 .places-list-view.scroll-fade-top.scroll-fade-bottom,
 .desktop-events-panel > .events-list.scroll-fade-top.scroll-fade-bottom,
 .mobile-menu-controls.scroll-fade-top.scroll-fade-bottom {
-	-webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 34px, #000 calc(100% - 34px), transparent 100%);
-	mask-image: linear-gradient(to bottom, transparent 0, #000 34px, #000 calc(100% - 34px), transparent 100%);
 	box-shadow:
 		inset 0 28px 22px -22px rgba(96, 165, 250, 0.48),
 		inset 0 -28px 22px -22px rgba(96, 165, 250, 0.48);
@@ -3386,6 +3380,24 @@ select:focus-visible,
 	}
 }
 
+
+/* Touch performance */
+@media (pointer: coarse) {
+	.topbar,
+	.mobile-topbar,
+	.desktop-result-tab,
+	.desktop-list-tab,
+	.filter-panel,
+	.list-panel,
+	.desktop-events-panel,
+	.details-panel,
+	.help-button,
+	.loading-indicator,
+	.map-empty-state {
+		backdrop-filter: none;
+		-webkit-backdrop-filter: none;
+	}
+}
 
 /* Onboarding */
 .help-button {
