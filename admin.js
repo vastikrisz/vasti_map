@@ -89,7 +89,7 @@ const saveEventPlaceButton = document.getElementById("saveEventPlaceButton");
 const cancelEventPlaceButton = document.getElementById("cancelEventPlaceButton");
 const eventWebsite = document.getElementById("eventWebsite");
 const eventDescription = document.getElementById("eventDescription");
-const eventImageFile = document.getElementById("eventImageFile");
+
 const eventImageUrl = document.getElementById("eventImageUrl");
 const eventImageMessage = document.getElementById("eventImageMessage");
 const eventImagePreviewContainer = document.getElementById("eventImagePreviewContainer");
@@ -109,7 +109,7 @@ const eventsListMessage = document.getElementById("eventsListMessage");
 const refreshEventsButton = document.getElementById("refreshEventsButton");
 
 // Images
-const imageFileInput = document.getElementById("imageFile");
+
 const imagePreviewContainer = document.getElementById("imagePreviewContainer");
 const imagePreview = document.getElementById("imagePreview");
 const removeSelectedImageButton = document.getElementById("removeSelectedImageButton");
@@ -121,8 +121,6 @@ const placesAdminView = document.getElementById("placesAdminView");
 const notificationsAdminView = document.getElementById("notificationsAdminView");
 const placesTabButton = document.getElementById("placesTabButton");
 const notificationsTabButton = document.getElementById("notificationsTabButton");
-const currentVersionDisplay = document.getElementById("currentVersionDisplay");
-const nextVersionDisplay = document.getElementById("nextVersionDisplay");
 const releaseSubject = document.getElementById("releaseSubject");
 const releaseImageInput = document.getElementById("releaseImageInput");
 const releasePreviewFrame = document.getElementById("releasePreviewFrame");
@@ -141,15 +139,13 @@ const releaseMessage = document.getElementById("releaseMessage");
 // State
 let releaseEditor = null;
 let releaseSubscribers = [];
-let currentReleaseVersion = {
-	major: 1,
-	minor: 1
-};
 let adminMap = null;
 let adminMarker = null;
 let adminPlaces = [];
 let editingPlaceId = null;
 let editingOriginalStoragePath = null;
+let editingOriginalThumbnailPath = null;
+let editingOriginalThumbnailUrl = null;
 let editingOriginalImageUrl = "";
 let removeExistingImageOnSave = false;
 let adminEvents = [];
@@ -177,11 +173,15 @@ async function loadAdminPlaces() {
 				description,
 				ticket_info,
 				opening_hours,
+                opening_schedule,
+                ticket_prices,
 				categories,
 				price_level,
 				is_free,
 				image_urls,
 				image_storage_path,
+				thumbnail_url,
+				thumbnail_storage_path,
 				is_published,
 				is_event_only,
 				created_at
@@ -244,8 +244,8 @@ function getMissingPlaceFields(place) {
 
 	if (imageUrls.length === 0) missing.push("kép");
 	if (!String(place.description || "").trim()) missing.push("leírás");
-	if (!place.is_free && !String(place.ticket_info || "").trim()) missing.push("jegyinfó");
-	if (!String(place.opening_hours || "").trim()) missing.push("nyitvatartás");
+	if (!place.is_free && !String(place.ticket_info || "").trim() && !place.ticket_prices?.items?.length) missing.push("jegyinfó");
+	if (!String(place.opening_hours || "").trim() && !place.opening_schedule?.mode) missing.push("nyitvatartás");
 	if (!String(place.website || "").trim()) missing.push("weboldal");
 
 	return missing;
@@ -360,6 +360,7 @@ function startEditingPlace(placeId) {
 	descriptionInput.value = place.description || "";
 	ticketInfoInput.value = place.ticket_info || "";
 	openingHoursInput.value = place.opening_hours || "";
+ setStructuredEditor(place);
 	const categories = Array.isArray(place.categories)
 		? place.categories
 		: [];
@@ -370,8 +371,10 @@ function startEditingPlace(placeId) {
 		: [];
 	editingOriginalImageUrl = imageUrls[0] || "";
 	editingOriginalStoragePath = place.image_storage_path || null;
+	editingOriginalThumbnailPath = place.thumbnail_storage_path || null;
+	editingOriginalThumbnailUrl = place.thumbnail_url || null;
 	removeExistingImageOnSave = false;
-	imageFileInput.value = "";
+	
 	if (editingOriginalStoragePath) {
 		imageUrlInput.value = "";
 		imageMessage.textContent = "Jelenlegi, tárhelyre feltöltött kép.";
@@ -407,8 +410,8 @@ async function deletePlace(placeId, placeName) {
 		return;
 	}
 	const placeToDelete = adminPlaces.find((place) => Number(place.id) === Number(placeId));
-	const storagePathToDelete = placeToDelete?.image_storage_path ||
-		null;
+	const storagePathToDelete = placeToDelete?.image_storage_path || null;
+	const thumbnailPathToDelete = placeToDelete?.thumbnail_storage_path || null;
 	placesListMessage.textContent = `${placeName} törlése...`;
 	placesListMessage.className = "message";
 	const { error } = await supabaseClient
@@ -424,6 +427,7 @@ async function deletePlace(placeId, placeName) {
 	if (storagePathToDelete) {
 		await deleteStoredImage(storagePathToDelete);
 	}
+	if (thumbnailPathToDelete) await deleteStoredImage(thumbnailPathToDelete);
 	adminPlaces = adminPlaces.filter((place) => Number(place.id) !== Number(placeId));
 	if (Number(editingPlaceId) ===
 		Number(placeId)) {
@@ -528,7 +532,7 @@ async function savePlace(event) {
 	const priceLevel = String(formData.get("priceLevel") || "").trim();
 	const isFree = formData.get("isFree") === "on";
 	const imageUrl = String(formData.get("imageUrl") || "").trim();
-	const selectedImageFile = imageFileInput.files?.[0] || null;
+	
 	const isPublished = formData.get("isPublished") === "on";
 	const categories = [
 		categoryOne,
@@ -575,26 +579,21 @@ Ettől függetlenül elmented az új adatot?`
 	let finalImageUrl = editingOriginalImageUrl || "";
 	let finalStoragePath = editingOriginalStoragePath || null;
 	let newlyUploadedStoragePath = null;
+	let newlyUploadedThumbnailPath = null;
+	let finalThumbnailUrl = editingOriginalThumbnailUrl;
+	let finalThumbnailPath = editingOriginalThumbnailPath;
 	try {
-		if (selectedImageFile) {
-			savePlaceButton.textContent = "Kép tömörítése és feltöltése...";
-			imageMessage.textContent = "A kép tömörítése és feltöltése folyamatban...";
-			imageMessage.style.color = "#94a3b8";
-			const uploadResult = await uploadPlaceImage(selectedImageFile);
-			finalImageUrl = uploadResult.publicUrl;
-			finalStoragePath = uploadResult.storagePath;
-			newlyUploadedStoragePath = uploadResult.storagePath;
-			const sizeInKilobytes = Math.round(uploadResult.sizeBytes / 1024);
-			imageMessage.textContent = `A tömörített kép feltöltve: ${sizeInKilobytes} KB`;
-			imageMessage.style.color = "#4ade80";
-		}
-		else if (imageUrl) {
+		if (imageUrl && imageUrl !== editingOriginalImageUrl) {
 			finalImageUrl = imageUrl;
 			finalStoragePath = null;
+			finalThumbnailUrl = null;
+			finalThumbnailPath = null;
 		}
 		else if (removeExistingImageOnSave) {
 			finalImageUrl = "";
 			finalStoragePath = null;
+			finalThumbnailUrl = null;
+			finalThumbnailPath = null;
 		}
 	}
 	catch (error) {
@@ -612,7 +611,9 @@ Ettől függetlenül elmented az új adatot?`
 		isEditing
 			? "Módosítások mentése..."
 			: "Mentés...";
-	const placeToSave = {
+	let scheduleValue, ticketsValue;
+ try { scheduleValue=collectSchedule(); ticketsValue=collectTickets(); } catch (error) { savePlaceButton.disabled=false; showSaveMessage(error.message,"error"); return; }
+ const placeToSave = {
 		name,
 		address,
 		city,
@@ -622,6 +623,8 @@ Ettől függetlenül elmented az új adatot?`
 		description: description || null,
 		ticket_info: ticketInfo || null,
 		opening_hours: openingHours || null,
+        opening_schedule: scheduleValue,
+        ticket_prices: ticketsValue,
 		categories,
 		price_level: priceLevel || null,
 		is_free: isFree,
@@ -629,6 +632,8 @@ Ettől függetlenül elmented az új adatot?`
 			? [finalImageUrl]
 			: [],
 		image_storage_path: finalStoragePath,
+		thumbnail_url: finalThumbnailUrl,
+		thumbnail_storage_path: finalThumbnailPath,
 		is_published: isPublished
 	};
 	let result;
@@ -651,14 +656,16 @@ Ettől függetlenül elmented az új adatot?`
 			? "Módosítások mentése"
 			: "Nevezetesség mentése";
 	if (error) {
-		if (newlyUploadedStoragePath) {
-			await deleteStoredImage(newlyUploadedStoragePath);
-		}
+		if (newlyUploadedStoragePath) await deleteStoredImage(newlyUploadedStoragePath);
+		if (newlyUploadedThumbnailPath) await deleteStoredImage(newlyUploadedThumbnailPath);
 		console.error("Mentési hiba:", error);
 		showSaveMessage(`Nem sikerült elmenteni: ${error.message}`, "error");
 		return;
 	}
 	const savedPlace = data?.[0];
+	if (isEditing && editingOriginalThumbnailPath && editingOriginalThumbnailPath !== finalThumbnailPath) {
+		await deleteStoredImage(editingOriginalThumbnailPath);
+	}
 	if (isEditing &&
 		editingOriginalStoragePath &&
 		editingOriginalStoragePath !==
@@ -846,7 +853,7 @@ function showEventImagePreview(imageSource) {
 }
 
 function clearEventImageSelection(markExistingImageForRemoval = true) {
-	eventImageFile.value = "";
+	
 	eventImageUrl.value = "";
 	eventImageMessage.textContent = "";
 	eventImageMessage.className = "field-message";
@@ -1290,7 +1297,7 @@ async function saveEvent(event) {
 	let finalImageUrl = isEditing && !removeExistingEventImageOnSave ? editingEventOriginalImageUrl : "";
 	let finalStoragePath = isEditing && !removeExistingEventImageOnSave ? editingEventOriginalStoragePath : null;
 	let newlyUploadedStoragePath = null;
-	const selectedImage = eventImageFile.files?.[0];
+	const selectedImage = null;
 	const externalImageUrl = eventImageUrl.value.trim();
 
 	if (selectedImage) {
@@ -1333,9 +1340,7 @@ async function saveEvent(event) {
 	saveEventButton.disabled = false;
 	saveEventButton.textContent = isEditing ? "Módosítások mentése" : "Esemény mentése";
 	if (result.error) {
-		if (newlyUploadedStoragePath) {
-			await deleteStoredImage(newlyUploadedStoragePath);
-		}
+		if (newlyUploadedStoragePath) await deleteStoredImage(newlyUploadedStoragePath);
 		console.error("Eseménymentési hiba:", result.error);
 		eventSaveMessage.textContent = `Nem sikerült elmenteni: ${result.error.message}`;
 		eventSaveMessage.className = "message error full-width";
@@ -1360,6 +1365,9 @@ function switchAdminView(view) {
 	const showPlaces = view === "places";
 	const showEvents = view === "events";
 	const showNotifications = view === "notifications";
+ const showChangelog = view === "changelog";
+ document.getElementById("changelogAdminView").classList.toggle("hidden", !showChangelog);
+ document.getElementById("changelogTabButton").classList.toggle("active", showChangelog);
 
 	placesAdminView.classList.toggle("hidden", !showPlaces);
 	eventsAdminView.classList.toggle("hidden", !showEvents);
@@ -1377,7 +1385,6 @@ function switchAdminView(view) {
 
 	if (showNotifications) {
 		initializeReleaseEditor();
-		loadReleaseVersion();
 		loadNotificationSubscribers();
 		updateReleasePreview();
 	}
@@ -1506,27 +1513,7 @@ async function uploadReleaseImage(file) {
 	}
 	return data.publicUrl;
 }
-async function loadReleaseVersion() {
-	const { data, error } = await supabaseClient
-		.from("app_settings")
-		.select("version_major, version_minor")
-		.eq("id", 1)
-		.single();
-	if (error) {
-		console.error("Verzió betöltési hiba:", error);
-		return;
-	}
-	currentReleaseVersion = {
-		major: data.version_major,
-		minor: data.version_minor
-	};
-	currentVersionDisplay.textContent = `v${data.version_major}.${data.version_minor}`;
-	nextVersionDisplay.textContent = `v${data.version_major}.${data.version_minor + 1}`;
-	updateReleasePreview();
-}
 function buildReleaseEmailHtml() {
-	const nextVersion = `${currentReleaseVersion.major}.` +
-		`${currentReleaseVersion.minor + 1}`;
 	const content = releaseEditor
 		? releaseEditor.root.innerHTML
 		: "";
@@ -1674,9 +1661,7 @@ function buildReleaseEmailHtml() {
 
 		<div class="email-brand">
 			Vasti Map
-			<span class="email-version">
-				v${nextVersion}
-			</span>
+			
 		</div>
 
 		<div class="email-content">
@@ -1848,12 +1833,10 @@ async function sendReleaseEmail(testMode) {
 			releaseMessage.className = "message success";
 		} else {
 			releaseMessage.textContent =
-				`${data.sent} email sikeresen elküldve. ` +
-				`Az új verzió: v${data.newVersion}.`;
+				`${data.sent} email sikeresen elküldve.`;
 			releaseMessage.className = "message success";
 			releaseSubject.value = "";
 			releaseEditor.setContents([]);
-			await loadReleaseVersion();
 			updateReleasePreview();
 		}
 	}
@@ -1954,7 +1937,7 @@ function showImagePreview(imageSource) {
 	imagePreviewContainer.classList.remove("hidden");
 }
 function clearImageSelection(markExistingImageForRemoval = true) {
-	imageFileInput.value = "";
+	
 	imageUrlInput.value = "";
 	imagePreview.src = "";
 	imagePreviewContainer.classList.add("hidden");
@@ -1965,10 +1948,7 @@ function clearImageSelection(markExistingImageForRemoval = true) {
 		removeExistingImageOnSave = true;
 	}
 }
-async function compressImageToWebp(file) {
-	const maximumWidth = 1600;
-	const maximumHeight = 1200;
-	const webpQuality = 0.78;
+async function compressImageToWebp(file, maximumWidth = 1600, maximumHeight = 1200, webpQuality = 0.78) {
 	const temporaryUrl = URL.createObjectURL(file);
 	try {
 		const image = new Image();
@@ -2011,32 +1991,29 @@ async function compressImageToWebp(file) {
 	}
 }
 async function uploadPlaceImage(file) {
-	const compressedImage = await compressImageToWebp(file);
-	const storagePath = `places/${crypto.randomUUID()}.webp`;
-	const { error: uploadError } = await supabaseClient.storage
-		.from(IMAGE_BUCKET)
-		.upload(storagePath, compressedImage, {
-			contentType: "image/webp",
-			cacheControl: "31536000",
-			upsert: false
-		});
-	if (uploadError) {
-		throw uploadError;
-	}
-	const { data: publicUrlData } = supabaseClient.storage
-		.from(IMAGE_BUCKET)
-		.getPublicUrl(storagePath);
-	if (!publicUrlData?.publicUrl) {
-		await supabaseClient.storage
-			.from(IMAGE_BUCKET)
-			.remove([storagePath]);
-		throw new Error("Nem sikerült létrehozni a kép nyilvános címét.");
-	}
-	return {
-		publicUrl: publicUrlData.publicUrl,
-		storagePath,
-		sizeBytes: compressedImage.size
-	};
+    const compressedImage = await compressImageToWebp(file);
+    const thumbnailImage = await compressImageToWebp(file, 320, 240, 0.68);
+    const uniqueId = crypto.randomUUID();
+    const storagePath = `places/${uniqueId}.webp`;
+    const thumbnailPath = `places/thumbs/${uniqueId}.webp`;
+    const storage = supabaseClient.storage.from(IMAGE_BUCKET);
+    const { error: originalError } = await storage.upload(storagePath, compressedImage, {
+        contentType: "image/webp", cacheControl: "31536000", upsert: false
+    });
+    if (originalError) throw originalError;
+    try {
+        const { error: thumbnailError } = await storage.upload(thumbnailPath, thumbnailImage, {
+            contentType: "image/webp", cacheControl: "31536000", upsert: false
+        });
+        if (thumbnailError) throw thumbnailError;
+        const publicUrl = storage.getPublicUrl(storagePath).data?.publicUrl;
+        const thumbnailUrl = storage.getPublicUrl(thumbnailPath).data?.publicUrl;
+        if (!publicUrl || !thumbnailUrl) throw new Error("Nem sikerült létrehozni a képek URL-jét.");
+        return { publicUrl, storagePath, thumbnailUrl, thumbnailPath, sizeBytes: compressedImage.size };
+    } catch (error) {
+        await storage.remove([storagePath, thumbnailPath]);
+        throw error;
+    }
 }
 async function deleteStoredImage(storagePath) {
 	if (!storagePath) {
@@ -2052,6 +2029,7 @@ async function deleteStoredImage(storagePath) {
 	return true;
 }
 function resetPlaceForm() {
+ setStructuredEditor({});
 	placeForm.reset();
 	editingPlaceId = null;
 	clearImageSelection(false);
@@ -2061,6 +2039,8 @@ function resetPlaceForm() {
 		adminMap.setView([47.1625, 19.5033], 7);
 	}
 	editingOriginalStoragePath = null;
+	editingOriginalThumbnailPath = null;
+	editingOriginalThumbnailUrl = null;
 	editingOriginalImageUrl = "";
 	removeExistingImageOnSave = false;
 	isFreeInput.checked = false;
@@ -2157,6 +2137,7 @@ placesTabButton.addEventListener("click", () => {
 eventsTabButton.addEventListener("click", () => {
 	switchAdminView("events");
 });
+document.getElementById("changelogTabButton").addEventListener("click", () => switchAdminView("changelog"));
 notificationsTabButton.addEventListener("click", () => {
 	switchAdminView("notifications");
 });
@@ -2181,33 +2162,8 @@ eventPlaceLongitude.addEventListener("change", () => {
 	updateEventPlaceMapPosition(eventPlaceLatitude.value, eventPlaceLongitude.value);
 });
 saveEventPlaceButton.addEventListener("click", saveEventPlace);
-eventImageFile.addEventListener("change", () => {
-	const file = eventImageFile.files?.[0];
-	eventImageMessage.textContent = "";
-	eventImageMessage.className = "field-message";
-
-	if (!file) {
-		showEventImagePreview(eventImageUrl.value.trim() || editingEventOriginalImageUrl);
-		return;
-	}
-
-	if (!file.type.startsWith("image/")) {
-		eventImageFile.value = "";
-		eventImageMessage.textContent = "A kiválasztott fájl nem kép.";
-		eventImageMessage.className = "field-message error-text";
-		return;
-	}
-
-	removeExistingEventImageOnSave = false;
-	showEventImagePreview(URL.createObjectURL(file));
-	eventImageMessage.textContent = `Kiválasztva: ${file.name}`;
-	eventImageMessage.className = "field-message success-text";
-});
-
 eventImageUrl.addEventListener("input", () => {
-	if (eventImageFile.files?.[0]) {
-		return;
-	}
+	
 
 	const imageUrl = eventImageUrl.value.trim();
 	removeExistingEventImageOnSave = false;
@@ -2385,29 +2341,8 @@ placesList.addEventListener("click", async (event) => {
 		"Ismeretlen hely";
 	await deletePlace(placeId, placeName);
 });
-imageFileInput.addEventListener("change", () => {
-	const file = imageFileInput.files?.[0];
-	imageMessage.textContent = "";
-	if (!file) {
-		showImagePreview(imageUrlInput.value.trim());
-		return;
-	}
-	if (!file.type.startsWith("image/")) {
-		imageMessage.textContent = "A kiválasztott fájl nem kép.";
-		imageMessage.style.color = "#f87171";
-		imageFileInput.value = "";
-		return;
-	}
-	removeExistingImageOnSave = false;
-	const temporaryUrl = URL.createObjectURL(file);
-	showImagePreview(temporaryUrl);
-	imageMessage.textContent = `Kiválasztva: ${file.name}`;
-	imageMessage.style.color = "#4ade80";
-});
 imageUrlInput.addEventListener("change", () => {
-	if (imageFileInput.files?.length) {
-		return;
-	}
+	
 	const imageUrl = imageUrlInput.value.trim();
 	if (imageUrl) {
 		removeExistingImageOnSave = false;
@@ -2418,3 +2353,52 @@ removeSelectedImageButton.addEventListener("click", clearImageSelection);
 
 // Init
 checkCurrentUser();
+
+// URL-only image policy: no storage uploads for places or events.
+const ticketRowsEl = document.getElementById("ticketRows");
+const seasonRowsEl = document.getElementById("seasonRows");
+const weekdayLabels = ["Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek", "Szombat", "Vasárnap"];
+function addTicketRow(item = {}) {
+ const row = document.createElement("div"); row.className = "structured-row ticket-row";
+ row.innerHTML = `<select class="ticket-type"><option value="adult">Felnőtt</option><option value="student">Diák</option><option value="senior">Nyugdíjas</option><option value="custom">Egyedi</option></select><input class="ticket-label" placeholder="Pl. 2 felnőtt + 2 gyerek" aria-label="Egyedi jegy megnevezése"><input class="ticket-price" type="number" min="0" step="1" placeholder="Ft" aria-label="Jegyár"><button type="button" class="secondary-button remove-row">×</button>`;
+ row.querySelector(".ticket-type").value = item.type || "adult"; row.querySelector(".ticket-label").value = item.label || ""; row.querySelector(".ticket-price").value = item.price ?? "";
+ const sync = () => { row.querySelector(".ticket-label").hidden = row.querySelector(".ticket-type").value !== "custom"; }; row.querySelector(".ticket-type").addEventListener("change", sync); sync();
+ row.querySelector(".remove-row").onclick = () => row.remove(); ticketRowsEl.append(row);
+}
+function addSeasonRow(season = {}) {
+ const row = document.createElement("fieldset"); row.className = "structured-row season-row";
+ row.innerHTML = `<legend>Szezon</legend><label>Elnevezés <input class="season-name" placeholder="Pl. Nyári időszak"></label><label>Kezdete (hó-nap) <input class="season-start" placeholder="03-01" pattern="(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])"></label><label>Vége (hó-nap) <input class="season-end" placeholder="10-31" pattern="(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])"></label><div class="season-weekdays"></div><button type="button" class="secondary-button remove-row">Szezon törlése</button>`;
+ row.querySelector(".season-name").value = season.name || ""; row.querySelector(".season-start").value = season.start || ""; row.querySelector(".season-end").value = season.end || "";
+ weekdayLabels.forEach((day,i) => {const item = document.createElement("label"); item.className="weekday-row"; item.innerHTML = `<span>${day}</span><input type="time" class="day-open" aria-label="${day} nyitás"><input type="time" class="day-close" aria-label="${day} zárás">`; const times=season.days?.[i]; item.querySelector(".day-open").value=times?.open||"";item.querySelector(".day-close").value=times?.close||"";row.querySelector(".season-weekdays").append(item);});
+ row.querySelector(".remove-row").onclick = () => row.remove(); seasonRowsEl.append(row);
+}
+function setStructuredEditor(place) {
+ ticketRowsEl.replaceChildren(); seasonRowsEl.replaceChildren();
+ document.getElementById("ticketYear").value = place.ticket_prices?.year || "";
+ (place.ticket_prices?.items || []).forEach(addTicketRow);
+ document.getElementById("hoursMode").value = place.opening_schedule?.mode || "";
+ (place.opening_schedule?.seasons || []).forEach(addSeasonRow);
+ syncHoursMode();
+}
+function syncHoursMode() {const active=document.getElementById("hoursMode").value === "schedule"; seasonRowsEl.hidden=!active;document.getElementById("addSeasonRow").hidden=!active;}
+function collectTickets() {
+ const rows=[...ticketRowsEl.querySelectorAll(".ticket-row")]; if (!rows.length) return null;
+ const items=rows.map(row=>({type:row.querySelector(".ticket-type").value,label:row.querySelector(".ticket-label").value.trim(),price:Number(row.querySelector(".ticket-price").value)}));
+ if (rows.some(row=>row.querySelector(".ticket-price").value.trim()==="") || items.some(item=>item.type==="custom"&&!item.label)) throw new Error("Minden jegyárhoz adj meg összeget és az egyedi jegyekhez megnevezést.");
+ return {year:Number(document.getElementById("ticketYear").value)||new Date().getFullYear(),items};
+}
+function collectSchedule() {
+ const mode=document.getElementById("hoursMode").value; if (!mode) return null; if(mode!=="schedule")return {mode};
+ const seasons=[...seasonRowsEl.querySelectorAll(".season-row")].map(row=>({name:row.querySelector(".season-name").value.trim(),start:row.querySelector(".season-start").value.trim(),end:row.querySelector(".season-end").value.trim(),days:[...row.querySelectorAll(".weekday-row")].map(day=>({open:day.querySelector(".day-open").value,close:day.querySelector(".day-close").value}))}));
+ if(!seasons.length) throw new Error("Adj meg legalább egy szezont.");
+ for(const season of seasons){for(const key of ["start","end"]){const [m,d]=season[key].split("-").map(Number);const test=new Date(2024,m-1,d);if(!/^\d{2}-\d{2}$/.test(season[key])||test.getMonth()!==m-1||test.getDate()!==d)throw new Error("Hibás szezon dátum. Formátum: HH-NN.");}if(season.days.some(d=>Boolean(d.open)!==Boolean(d.close)))throw new Error("A nyitás és zárás időpontját együtt add meg.");}
+ return {mode,seasons};
+}
+document.getElementById("addTicketRow").addEventListener("click",()=>addTicketRow());
+document.getElementById("addSeasonRow").addEventListener("click",()=>addSeasonRow());
+document.getElementById("hoursMode").addEventListener("change",syncHoursMode);
+// Independent manual changelog: no release email or email version changes.
+const changelogForm=document.getElementById("changelogForm");
+async function loadChangelogAdmin(){const {data,error}=await supabaseClient.from("app_settings").select("changelog_version,changelog_title,changelog_items").eq("id",1).single();if(error)return;document.getElementById("changelogVersion").value=data.changelog_version||"";document.getElementById("changelogTitle").value=data.changelog_title||"";document.getElementById("changelogItems").value=(data.changelog_items||[]).join("\n");}
+changelogForm.addEventListener("submit",async event=>{event.preventDefault();const status=document.getElementById("changelogStatus");const version=document.getElementById("changelogVersion").value.trim();const title=document.getElementById("changelogTitle").value.trim();const items=document.getElementById("changelogItems").value.split("\n").map(s=>s.trim()).filter(Boolean);if(!/^\d+\.\d+(?:\.\d+)?$/.test(version)||!items.length){status.textContent="Hibás verzió vagy üres változáslista.";return;}if(!confirm(`Az új kód már éles? Publikálod a ${version} verziót?`))return;const {error}=await supabaseClient.from("app_settings").update({changelog_version:version,changelog_title:title,changelog_items:items}).eq("id",1);status.textContent=error?`Hiba: ${error.message}`:`A ${version} verzió publikálva.`;});
+document.getElementById("changelogTabButton").addEventListener("click",loadChangelogAdmin);

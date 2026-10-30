@@ -7,8 +7,8 @@ const DRAG_TAP_THRESHOLD = 8;
 const DRAG_CLOSE_THRESHOLD = 65;
 const DRAG_EXPAND_SNAP = 0.28;
 const DRAG_COLLAPSE_SNAP = 0.72;
-const LIST_BATCH_SIZE = 24;
-const LIST_PREFETCH_DISTANCE = 720;
+const LIST_BATCH_SIZE = 12;
+const LIST_PREFETCH_DISTANCE = 380;
 const MARKER_KEEP_ALL_THRESHOLD = 300;
 const IS_COARSE_POINTER = window.matchMedia("(pointer: coarse)").matches;
 
@@ -78,6 +78,7 @@ const visibleMarkerIds = new Set();
 const categoryMarkerIconCache = new Map();
 let currentListPlaces = [];
 let listRenderedCount = 0;
+let listBatchScheduled = false;
 
 // Map
 const map = L.map("map", {
@@ -287,14 +288,19 @@ function isEditableElement(element = document.activeElement) {
 	);
 }
 
+// Reuse media queries rather than reading viewport dimensions during layout-sensitive work.
+const mobileWidthQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`);
+const landscapeWidthQuery = window.matchMedia(`(max-width: ${LANDSCAPE_BREAKPOINT}px)`);
+const landscapeOrientationQuery = window.matchMedia("(orientation: landscape)");
+const coarsePointerQuery = window.matchMedia("(pointer: coarse)");
+
 function isMobile() {
-	return window.innerWidth <= MOBILE_BREAKPOINT || isMobileLandscape();
+	return mobileWidthQuery.matches || isMobileLandscape();
 }
 
 function isMobileLandscape() {
-	const isLandscape = window.matchMedia("(orientation: landscape)").matches;
-	const hasCoarsePointer = window.matchMedia("(pointer: coarse)").matches;
-	return window.innerWidth <= LANDSCAPE_BREAKPOINT && isLandscape && (hasCoarsePointer || window.innerWidth <= MOBILE_BREAKPOINT);
+	return landscapeWidthQuery.matches && landscapeOrientationQuery.matches &&
+		(coarsePointerQuery.matches || mobileWidthQuery.matches);
 }
 
 function isMobilePortrait() {
@@ -435,7 +441,7 @@ function getBrowseablePlaces() {
 async function loadAppVersion() {
 	const { data, error } = await supabaseClient
 		.from("app_settings")
-		.select("version_major, version_minor")
+		.select("changelog_version")
 		.eq("id", 1)
 		.single();
 
@@ -444,10 +450,148 @@ async function loadAppVersion() {
 		return;
 	}
 
-	const version = `v${data.version_major}.${data.version_minor}`;
+	const version = data.changelog_version ? `v${data.changelog_version}` : "v1.5";
 	appVersionElements.forEach((element) => {
 		element.textContent = version;
 	});
+}
+
+// A kézi kiadásnapló független az emailes verziószámtól.
+let publishedChangelog = null;
+const CHANGELOG_SEEN_KEY = "vasti_last_seen_changelog";
+async function loadPublishedChangelog() {
+ const {data,error}=await supabaseClient.from("app_settings").select("changelog_version,changelog_title,changelog_items").eq("id",1).single();
+ if(error || !data?.changelog_version)return; publishedChangelog=data;
+ try { if(localStorage.getItem(CHANGELOG_SEEN_KEY)!==data.changelog_version && hasSeenOnboarding()) openChangelog(); }catch{}
+}
+function openChangelog() {
+ if(!publishedChangelog){const page=document.getElementById("changelogPage");page.querySelector(".changelog-heading").textContent="Még nincs közzétett változáslista";page.querySelector(".changelog-list").replaceChildren();openOnboarding("changelog");renderOnboardingPage(onboardingPages.length-1);return;}
+ const page=document.getElementById("changelogPage");
+ page.querySelector(".changelog-heading").textContent=`${publishedChangelog.changelog_title || "Mi változott?"} · v${publishedChangelog.changelog_version}`;
+ const list=page.querySelector(".changelog-list");list.replaceChildren();
+ (publishedChangelog.changelog_items||[]).forEach(item=>{const li=document.createElement("li");li.textContent=item;list.append(li);});
+ openOnboarding("changelog");renderOnboardingPage(onboardingPages.length-1);
+ try{localStorage.setItem(CHANGELOG_SEEN_KEY,publishedChangelog.changelog_version);}catch{}
+}
+function formatTicketPrices(info) {
+ const names={adult:"Felnőtt",student:"Diák",senior:"Nyugdíjas"};
+ const lines=(info.items||[]).map(item=>`${escapeHtml(item.type==="custom"?item.label:(names[item.type]||item.type))}: ${Number(item.price).toLocaleString("hu-HU")} Ft`);
+ return `<p>${lines.join("<br>")}${info.year?`<br><small>(${Number(info.year)}-os adatok)</small>`:""}</p>`;
+}
+function formatOpeningSchedule(schedule) {
+ const modes={always:"0–24 órában látogatható",appointment:"Csak előzetes bejelentkezéssel látogatható",unknown:"Nincs információ a nyitvatartásról",temporary:"Átmenetileg zárva"};
+ if(schedule.mode!=="schedule")return escapeHtml(modes[schedule.mode]||"Nincs információ a nyitvatartásról");
+ const today=new Date();today.setHours(0,0,0,0);
+ const inSeason=(date,s)=>{const mmdd=(date.getMonth()+1)*100+date.getDate();const a=Number(s.start?.replace("-","")),b=Number(s.end?.replace("-",""));return a<=b?mmdd>=a&&mmdd<=b:mmdd>=a||mmdd<=b;};
+ const weekday=(date)=>(date.getDay()+6)%7;
+ const seasons=schedule.seasons||[];
+ const active=seasons.filter(s=>inSeason(today,s));
+ const names=["Hétfő","Kedd","Szerda","Csütörtök","Péntek","Szombat","Vasárnap"];
+ const rows=active.flatMap(s=>(s.days||[]).map((d,i)=>d?.open&&d?.close?`${names[i]}: ${d.open}–${d.close}`:null).filter(Boolean));
+ if(active.length && rows.length){
+  const seasonsHeader=active.map(s=>{
+   const fullYear=s.start==="01-01"&&s.end==="12-31";
+   const period=fullYear?"":`<span class="season-validity">Érvényes: ${escapeHtml(s.start||"").replace("-",".")} – ${escapeHtml(s.end||"").replace("-",".")}</span>`;
+   return `<span class="season-heading">${escapeHtml(s.name||"Aktuális szezon")}</span>${period}`;
+  }).join("<br>");
+  return `${seasonsHeader}<br><span class="season-hours">${rows.map(escapeHtml).join("<br>")}</span>`;
+ }
+ for(let offset=0;offset<735;offset++){const d=new Date(today);d.setDate(today.getDate()+offset);for(const season of seasons){if(!inSeason(d,season))continue;const day=season.days?.[weekday(d)];if(!day?.open||!day?.close)continue;const date=d.toLocaleDateString("hu-HU",{year:"numeric",month:"long",day:"numeric",weekday:"long"});return `Szezonálisan zárva. Következő nyitás: ${escapeHtml(date)}, ${escapeHtml(day.open)}`;}}
+ return "Szezonálisan zárva. Nincs megadott következő nyitási időpont.";
+}
+// Detailed fields are fetched only when a visitor opens a place.
+// Cache promises as well as results so rapid repeated opens do not duplicate requests.
+const placeDetailRequests = new Map();
+function fetchPlaceDetails(placeId) {
+	if (!placeDetailRequests.has(placeId)) {
+		const request = supabaseClient.from("places")
+			.select("description, ticket_info, opening_hours, opening_schedule, ticket_prices")
+			.eq("id", placeId).eq("is_published", true).single()
+			.then(({ data, error }) => {
+				if (error) throw error;
+				return data;
+			})
+			.catch((error) => {
+				placeDetailRequests.delete(placeId); // Allow retry after transient failures.
+				throw error;
+			});
+		placeDetailRequests.set(placeId, request);
+	}
+	return placeDetailRequests.get(placeId);
+}
+
+// Low-priority detail prefetch. Batch requests to avoid one HTTP call per place.
+const PREFETCH_BATCH_SIZE = 8;
+const PREFETCH_DELAY_MS = 1400;
+const prefetchQueuedIds = new Set();
+let prefetchTimer = null;
+let prefetchRunning = false;
+
+function applyPlaceDetailData(place, details) {
+    place.description = details.description || "Nincs megadva leírás.";
+    place.ticketInfo = details.ticket_info || "Nincs megadva jegyinformáció.";
+    place.ticketPrices = details.ticket_prices || null;
+    place.openingHours = details.opening_hours || "Nincs megadva nyitvatartás.";
+    place.openingSchedule = details.opening_schedule || null;
+}
+
+function queuePlacePrefetch(candidates) {
+    if (navigator.connection?.saveData) return;
+    for (const place of candidates.slice(0, PREFETCH_BATCH_SIZE)) {
+        if (place && !placeDetailRequests.has(place.id)) prefetchQueuedIds.add(place.id);
+    }
+    if (!prefetchTimer && prefetchQueuedIds.size) {
+        prefetchTimer = window.setTimeout(() => {
+            prefetchTimer = null;
+            void flushPlacePrefetch();
+        }, PREFETCH_DELAY_MS);
+    }
+}
+
+async function flushPlacePrefetch() {
+    if (prefetchRunning || !prefetchQueuedIds.size) return;
+    prefetchRunning = true;
+    const ids = [...prefetchQueuedIds].slice(0, PREFETCH_BATCH_SIZE);
+    ids.forEach(id => prefetchQueuedIds.delete(id));
+    // Mark each id in-flight so opening a place reuses the same request.
+    let resolveBatch, rejectBatch;
+    const batch = new Promise((resolve, reject) => {
+        resolveBatch = resolve;
+        rejectBatch = reject;
+    });
+    const owned = ids.filter(id => !placeDetailRequests.has(id));
+    owned.forEach(id => {
+        const promise = batch.then(rows => {
+            const details = rows.find(row => Number(row.id) === id);
+            if (!details) throw new Error(`Hiányzó helyadat: ${id}`);
+            return details;
+        }).catch(error => {
+            if (placeDetailRequests.get(id) === promise) placeDetailRequests.delete(id);
+            throw error;
+        });
+        // Avoid unhandled rejections for prefetched places never opened.
+        promise.catch(() => {});
+        placeDetailRequests.set(id, promise);
+    });
+    try {
+        if (owned.length) {
+            const { data, error } = await supabaseClient.from("places")
+                .select("id, description, ticket_info, opening_hours, opening_schedule, ticket_prices")
+                .in("id", owned).eq("is_published", true);
+            if (error) throw error;
+            (data || []).forEach(details => {
+                const place = getPlaceById(details.id);
+                if (place) applyPlaceDetailData(place, details);
+            });
+            resolveBatch(data || []);
+        } else resolveBatch([]);
+    } catch (error) {
+        console.warn("Háttér-előtöltés sikertelen:", error);
+        rejectBatch(error);
+    } finally {
+        prefetchRunning = false;
+        if (prefetchQueuedIds.size && !prefetchTimer) queuePlacePrefetch([]);
+    }
 }
 
 // Data
@@ -462,13 +606,11 @@ async function loadPlaces() {
 			latitude,
 			longitude,
 			website,
-			description,
-			ticket_info,
-			opening_hours,
 			categories,
 			price_level,
 			is_free,
 			image_urls,
+			thumbnail_url,
 			is_event_only
 		`)
 		.eq("is_published", true)
@@ -491,13 +633,16 @@ async function loadPlaces() {
 			latitude: Number(place.latitude),
 			longitude: Number(place.longitude),
 			website: place.website || "",
-			description: place.description || "Nincs megadva leírás.",
-			ticketInfo: place.ticket_info || "Nincs megadva jegyinformáció.",
-			openingHours: place.opening_hours || "Nincs megadva nyitvatartás.",
+			description: "Betöltés…",
+			ticketInfo: "Betöltés…",
+            ticketPrices: null,
+			openingHours: "Betöltés…",
+            openingSchedule: null,
 			categories,
 			priceLevel: place.price_level || null,
 			isFree: Boolean(place.is_free),
 			image: imageUrls[0] || "",
+			thumbnail: place.thumbnail_url || imageUrls[0] || "",
 			isEventOnly: Boolean(place.is_event_only),
 			searchText: [place.name, place.address, place.city, ...categories]
 				.join(" ")
@@ -1075,8 +1220,8 @@ function getListPlaces() {
 
 function getListPlaceCardHtml(place) {
 	const category = place.categories[0] || "Hely";
-	const image = place.image
-		? `<img src="${escapeHtml(place.image)}" alt="" loading="lazy" decoding="async" fetchpriority="low">`
+	const image = place.thumbnail
+		? `<img src="${escapeHtml(place.thumbnail)}" alt="" loading="lazy" decoding="async" fetchpriority="low">`
 		: `<div class="list-place-placeholder">${escapeHtml((CATEGORY_MARKER_CONFIG[category] || DEFAULT_MARKER_CONFIG).symbol)}</div>`;
 	const freeBadge = place.isFree ? `<span class="list-free-badge">Ingyenes</span>` : "";
 
@@ -1124,6 +1269,7 @@ function ensureListViewportFilled() {
 
 function renderPlaceList({ resetScroll = false } = {}) {
 	currentListPlaces = getListPlaces();
+	// A listához nincs szükség részletes helyadatokra; ne előtöltsük őket.
 	listRenderedCount = 0;
 	listResultsCount.textContent = `${currentListPlaces.length} hely`;
 
@@ -1152,8 +1298,8 @@ function handleListScrollPerformance() {
 	}
 
 	const remaining = placesListView.scrollHeight - placesListView.scrollTop - placesListView.clientHeight;
-	if (remaining <= LIST_PREFETCH_DISTANCE) {
-		appendNextListBatch();
+	if (remaining <= LIST_PREFETCH_DISTANCE && !listBatchScheduled) {
+        listBatchScheduled=true; requestAnimationFrame(()=>{listBatchScheduled=false;appendNextListBatch();});
 	}
 }
 
@@ -1818,7 +1964,26 @@ function openPlaceDetails(placeId, options = {}) {
 		return;
 	}
 
-	trackAnalyticsEvent("place_open", { category: place.categories[0] || "Hely" });
+	// Fetch the large text fields only for the currently opened place.
+	if (!options.skipTracking && place.description === "Betöltés…") fetchPlaceDetails(place.id).then((details) => {
+		place.description = details.description || "Nincs megadva leírás.";
+		place.ticketInfo = details.ticket_info || "Nincs megadva jegyinformáció.";
+    place.ticketPrices = details.ticket_prices || null;
+		place.openingHours = details.opening_hours || "Nincs megadva nyitvatartás.";
+    place.openingSchedule = details.opening_schedule || null;
+		if (detailsPanel.classList.contains("open") && detailsPanel.dataset.placeId === String(place.id)) {
+			openPlaceDetails(place.id, { ...options, panMap: false, skipTracking: true });
+		}
+	}).catch((error) => {
+		console.error("Hely részleteinek betöltése sikertelen:", error);
+		place.description = "A leírás nem tölthető be. Próbáld újra később.";
+		place.ticketInfo = "A jegyinformáció nem tölthető be.";
+		place.openingHours = "A nyitvatartás nem tölthető be.";
+		if (detailsPanel.classList.contains("open") && detailsPanel.dataset.placeId === String(place.id)) {
+			openPlaceDetails(place.id, { ...options, panMap: false, skipTracking: true });
+		}
+	});
+	if (!options.skipTracking) trackAnalyticsEvent("place_open", { category: place.categories[0] || "Hely" });
 
 	const { preserveEventMarker = false, panMap = true } = options;
 	if (!preserveEventMarker) {
@@ -1849,7 +2014,7 @@ function openPlaceDetails(placeId, options = {}) {
 		? `<span class="price-badge ${place.priceLevel}">${place.priceLevel === "cheap" ? "Olcsó" : "Drága"}</span>`
 		: "";
 	const freeEntryHtml = getFreeEntryHtml(place);
-	const ticketInfoHtml = place.ticketInfo && place.ticketInfo !== "Nincs megadva jegyinformáció."
+	const ticketInfoHtml = place.ticketPrices?.items?.length ? formatTicketPrices(place.ticketPrices) : place.ticketInfo && place.ticketInfo !== "Nincs megadva jegyinformáció."
 		? `<p>${escapeHtml(place.ticketInfo)}</p>`
 		: !freeEntryHtml
 			? `<p>Nincs megadva jegyinformáció.</p>`
@@ -1894,7 +2059,7 @@ function openPlaceDetails(placeId, options = {}) {
 
 			<section class="info-block">
 				<h3>Nyitvatartás</h3>
-				<p>${escapeHtml(place.openingHours)}</p>
+				<p>${place.openingSchedule ? formatOpeningSchedule(place.openingSchedule) : escapeHtml(place.openingHours)}</p>
 			</section>
 
 			${websiteHtml}
@@ -2033,12 +2198,19 @@ function startDetailsDrag(event) {
 	detailsDragCaptureElement.setPointerCapture(event.pointerId);
 }
 
+// Coalesce high-frequency pointer events into one DOM update per animation frame.
+let detailsDragFrame = 0;
 function moveDetailsDrag(event) {
-	if (!detailsDragging) {
-		return;
-	}
-
+	if (!detailsDragging) return;
 	detailsDragCurrentY = event.clientY;
+	if (detailsDragFrame) return;
+	detailsDragFrame = requestAnimationFrame(() => {
+		detailsDragFrame = 0;
+		if (detailsDragging) renderDetailsDragPosition();
+	});
+}
+
+function renderDetailsDragPosition() {
 	const deltaY = detailsDragCurrentY - detailsDragStartY;
 
 	if (!detailsDragStartedExpanded && deltaY > 0) {
@@ -2063,10 +2235,12 @@ function moveDetailsDrag(event) {
 }
 
 function finishDetailsDrag(event) {
-	if (!detailsDragging) {
-		return;
+	if (!detailsDragging) return;
+	if (detailsDragFrame) {
+		cancelAnimationFrame(detailsDragFrame);
+		detailsDragFrame = 0;
+		renderDetailsDragPosition();
 	}
-
 	detailsDragging = false;
 	const deltaY = detailsDragCurrentY - detailsDragStartY;
 	detailsPanel.classList.remove("dragging");
@@ -2180,6 +2354,8 @@ placesListView.addEventListener("click", (event) => {
 });
 
 helpButton.addEventListener("click", () => openOnboarding("help"));
+document.getElementById("showChangelogButton").addEventListener("click",openChangelog);
+document.getElementById("showHelpButton").addEventListener("click",()=>{openOnboarding("help");});
 onboardingClose.addEventListener("click", () => closeOnboarding());
 onboardingBack.addEventListener("click", () => renderOnboardingPage(onboardingPageIndex - 1));
 onboardingNext.addEventListener("click", () => {
@@ -2362,9 +2538,11 @@ async function initializeApp() {
 	try {
 		await Promise.all([
 			loadAppVersion(),
+            loadPublishedChangelog(),
 			loadPlaces()
 		]);
 		await loadEvents();
+		queuePlacePrefetch(getBrowseablePlaces());
 
 		if (!isMobile()) {
 			setDesktopEventsOpen(true);

@@ -1391,3 +1391,27 @@ input[type="file"]::file-selector-button {
 .event-admin-item .place-status.draft {
 	border-color: rgba(148, 163, 184, 0.20);
 }
+
+.structured-rows {display:grid;gap:12px;margin:10px 0}
+.structured-row {display:grid;gap:8px;padding:12px;border:1px solid rgba(148,163,184,.25);border-radius:12px;min-width:0}
+.ticket-row {grid-template-columns: minmax(110px,1fr) minmax(100px,1.4fr) minmax(90px,1fr) auto;align-items:center}
+.season-weekdays {display:grid;gap:5px}.weekday-row {display:grid;grid-template-columns:minmax(85px,1fr) 1fr 1fr;align-items:center;gap:8px}
+.structured-row input,.structured-row select {min-width:0;width:100%;box-sizing:border-box}
+@media(max-width:650px){.ticket-row{grid-template-columns:1fr 1fr}.weekday-row{grid-template-columns:1fr 1fr 1fr}}
+
+/* Strukturált adatlap-szerkesztők: egymás alatt, független magassággal */
+.structured-editor-panel {
+  grid-column: 1 / -1;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #29394d;
+  border-radius: 14px;
+  background: #111b27;
+  align-content: start;
+}
+.structured-editor-panel > label:first-child {font-size: 1.05rem;font-weight: 700;}
+.structured-editor-panel textarea {min-height: 76px;max-height: 180px;}
+.structured-editor-panel .field-hint {margin: 0;color: #a8b9cd;}
+.structured-editor-panel .secondary-button {justify-self: start;min-width: 150px;}
+.structured-editor-panel .structured-row {background: #0e1621;}
+@media (max-width: 720px) { .structured-editor-panel {padding: 12px;} }

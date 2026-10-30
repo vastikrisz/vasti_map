@@ -38,6 +38,7 @@
 					<button id="placesTabButton" class="admin-tab active" type="button">Helyek</button>
 					<button id="eventsTabButton" class="admin-tab" type="button">Események</button>
 					<button id="notificationsTabButton" class="admin-tab" type="button">Értesítések</button>
+<button id="changelogTabButton" class="admin-tab" type="button">Mi változott?</button>
 				</div>
 				<!-- Places -->
 				<div id="placesAdminView" class="dashboard-grid">
@@ -84,13 +85,18 @@
 							<label for="description">Leírás</label>
 							<textarea id="description" name="description" rows="5"></textarea>
 						</div>
-						<div class="form-group">
+						<div class="form-group full-width structured-editor-panel">
 							<label for="ticketInfo">Jegyárak és jegyinformáció</label>
 							<textarea id="ticketInfo" name="ticketInfo" rows="3"></textarea>
+<p class="field-hint">Régi adat: a strukturált árak mentéséig megmarad.</p>
+<div id="ticketRows" class="structured-rows"></div><button id="addTicketRow" type="button" class="secondary-button">+ Jegytípus</button><label class="field-hint">Jegyárak adatainak éve <input id="ticketYear" type="number" min="2020" max="2100" placeholder="2026"></label>
 						</div>
-						<div class="form-group">
+						<div class="form-group full-width structured-editor-panel">
 							<label for="openingHours">Nyitvatartás</label>
 							<textarea id="openingHours" name="openingHours" rows="3"></textarea>
+<p class="field-hint">Régi adat: a strukturált nyitvatartás mentéséig megmarad.</p>
+<label>Új nyitvatartási mód <select id="hoursMode"><option value="">Régi szöveg használata</option><option value="schedule">Szezonális / heti</option><option value="always">0–24</option><option value="appointment">Előzetes bejelentkezéssel</option><option value="unknown">Nincs információ</option><option value="temporary">Átmenetileg zárva</option></select></label>
+<div id="seasonRows" class="structured-rows"></div><button id="addSeasonRow" type="button" class="secondary-button">+ Szezon</button>
 						</div>
 						<div class="form-group">
 							<label for="categoryOne">Első kategória *</label>
@@ -141,13 +147,9 @@
 						</label>
 						<div class="form-group full-width image-form-section">
 							<h3>Kép hozzáadása</h3>
-							<p class="field-hint">Tölts fel egy képet a gépedről, vagy adj meg egy külső képlinket. Ha mindkettőt megadod, a feltöltött kép lesz használva.</p>
+							<p class="field-hint">Csak külső kép-URL-t használunk; nem tárolunk képeket a Supabase Storage-ban.</p>
 							<div class="image-input-grid">
-								<div class="image-input-card">
-									<label for="imageFile">Kép feltöltése a gépről</label>
-									<input id="imageFile" name="imageFile" type="file" accept="image/jpeg,image/png,image/webp">
-									<p class="field-hint">JPG, PNG vagy WebP formátum.</p>
-								</div>
+
 								<div class="image-input-card">
 									<label for="imageUrl">Külső képlink</label>
 									<input id="imageUrl" name="imageUrl" type="url" placeholder="https://pelda.hu/kep.jpg">
@@ -178,7 +180,7 @@
 								<h2>Mentett nevezetességek</h2>
 								<p id="placesCount" class="places-count">Helyek betöltése...</p>
 							</div>
-							<button id="refreshPlacesButton" class="secondary-button" type="button">Lista frissítése</button>
+							<div style="display:flex;gap:8px;flex-wrap:wrap"><button id="refreshPlacesButton" class="secondary-button" type="button">Lista frissítése</button></div>
 						</div>
 						<div class="places-search">
 							<label for="placesSearchInput">Keresés a mentett helyek között</label>
@@ -331,14 +333,10 @@
 
 						<div class="form-group full-width image-form-section">
 							<h3>Esemény képe</h3>
-							<p class="field-hint">Tölts fel képet a gépedről, vagy adj meg egy külső képlinket. Ha mindkettőt megadod, a feltöltött kép lesz használva.</p>
+							<p class="field-hint">Csak külső kép-URL-t használunk.</p>
 
 							<div class="image-input-grid">
-								<div class="image-input-card">
-									<label for="eventImageFile">Kép feltöltése a gépről</label>
-									<input id="eventImageFile" type="file" accept="image/jpeg,image/png,image/webp">
-									<p class="field-hint">JPG, PNG vagy WebP formátum.</p>
-								</div>
+								
 
 								<div class="image-input-card">
 									<label for="eventImageUrl">Külső képlink</label>
@@ -406,18 +404,7 @@
 						<div class="notification-heading">
 							<div>
 								<h2>Verzióértesítő</h2>
-								<p>Az email kiküldése után a verziószám automatikusan frissül.</p>
-							</div>
-							<div class="version-box">
-								<div>
-									<span>Jelenlegi</span>
-									<strong id="currentVersionDisplay">v1.1</strong>
-								</div>
-								<div class="version-arrow">→</div>
-								<div>
-									<span>Következő</span>
-									<strong id="nextVersionDisplay">v1.2</strong>
-								</div>
+								<p>Az emailküldés nem publikál új verziót. A kiadásnapló külön kezelhető a „Mi változott?” fülön.</p>
 							</div>
 						</div>
 						<div class="notification-field">
@@ -465,9 +452,13 @@
 						</div>
 					</section>
 				</section>
+<section id="changelogAdminView" class="hidden" style="max-width:760px;margin:20px auto"><h2>Mi változott? – kiadás</h2><p class="field-hint">Az emailes értesítések verziószámától teljesen független. Csak a kód élesítése után publikáld.</p><form id="changelogForm"><label>Verzió <input id="changelogVersion" required placeholder="1.6"></label><label>Cím <input id="changelogTitle" required placeholder="Újdonságok"></label><label>Változások (soronként egy) <textarea id="changelogItems" rows="7" required></textarea></label><button type="submit">Kiadás publikálása</button></form><p id="changelogStatus" class="message" aria-live="polite"></p></section>
+
 				<a class="back-link" href="index.html">Térkép megnyitása</a>
 			</section>
 		</main>
+
+
 		<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 		<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 		<script src="config.js"></script>

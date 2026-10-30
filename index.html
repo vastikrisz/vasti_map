@@ -255,7 +255,8 @@
 			<section class="onboarding-dialog" role="dialog" aria-modal="true" aria-label="Vasti Map bemutató">
 				<button id="onboardingClose" class="onboarding-close" type="button" aria-label="Bemutató bezárása">×</button>
 
-				<div id="onboardingContent" class="onboarding-content">
+				<div class="onboarding-switch"><button id="showHelpButton" type="button">Súgó</button><button id="showChangelogButton" type="button">Mi változott?</button></div>
+<div id="onboardingContent" class="onboarding-content">
 					<article class="onboarding-page active" data-onboarding-page="0">
 						<span class="onboarding-eyebrow">Vasti Map</span>
 						<h2 id="onboardingTitle">Üdv a Vasti Mapen! <span aria-hidden="true">👋</span></h2>
@@ -292,6 +293,7 @@
 						</div>
 						<p class="onboarding-note">A felhasználói fiókok kezdetben tesztüzemben, korlátozottan és adminisztrátori jóváhagyással lesznek elérhetők.</p>
 					</article>
+<article id="changelogPage" class="onboarding-page" data-onboarding-page="3" aria-hidden="true"><span class="onboarding-eyebrow">Újdonságok</span><h2 class="changelog-heading">Mi változott?</h2><ul class="changelog-list"></ul></article>
 				</div>
 
 				<footer class="onboarding-footer">

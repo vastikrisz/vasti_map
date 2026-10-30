@@ -3802,3 +3802,36 @@ body.onboarding-open .help-button {
 		max-height: calc(var(--visual-viewport-height, 100dvh) - 40px);
 	}
 }
+
+/* List rendering: limit off-screen layout/paint without touching the map or mobile sheet. */
+.list-place-card { content-visibility:auto; contain-intrinsic-size:auto 104px; }
+.list-place-image img { object-fit:cover; }
+.onboarding-switch {display:flex;gap:8px;padding:14px 22px 0;flex-wrap:wrap}
+.onboarding-switch button {border:1px solid rgba(148,163,184,.28);border-radius:999px;padding:8px 14px;background:rgba(100,116,139,.14);color:inherit;cursor:pointer}
+.changelog-list {padding-left:22px;line-height:1.8}
+
+/* Aktuális nyitvatartási szezon */
+.season-heading {display:inline-block;font-weight:750;color:var(--text-primary,#f0f5fa);margin:3px 0 2px;}
+.season-validity {display:block;font-size:.82em;opacity:.8;margin-bottom:5px;}
+.season-hours {display:inline-block;line-height:1.65;}
+
+/* Desktop/tablet place details: floating card below the navigation.
+   Mobile portrait/landscape touch sheets keep their existing behavior. */
+@media (min-width: 769px) and (orientation: portrait),
+       (min-width: 1181px),
+       (min-width: 769px) and (hover: hover) and (pointer: fine) {
+  .details-panel {
+    top: 108px;
+    right: 18px;
+    bottom: 18px;
+    width: min(430px, calc(100vw - 36px));
+    height: auto;
+    max-height: calc(100dvh - 126px);
+    border: 1px solid rgba(96, 165, 250, 0.18);
+    border-radius: 18px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+}
