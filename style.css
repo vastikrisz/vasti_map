@@ -3835,3 +3835,123 @@ body.onboarding-open .help-button {
     scrollbar-width: thin;
   }
 }
+
+/* VastiMap 1.6 account UI */
+.vm-profile-trigger{border:1px solid rgba(130,151,176,.35);border-radius:50%;width:39px;height:39px;min-width:39px;display:inline-grid;place-items:center;cursor:pointer;background:#e7edf5;color:#28384e;font-weight:750;font-size:15px}.vm-profile-symbol{line-height:1}.vm-overlay[hidden]{display:none!important}.vm-overlay{position:fixed;inset:0;z-index:10050;background:rgba(9,18,33,.66);display:grid;place-items:center;padding:14px}.vm-dialog{background:#162235;color:#edf3ff;width:min(540px,100%);max-height:calc(100dvh - 30px);overflow:auto;border-radius:18px;padding:24px;box-shadow:0 20px 70px #0009;position:relative}.vm-close{position:absolute;right:15px;top:12px;border:0;background:transparent;color:inherit;font-size:29px;cursor:pointer}.vm-dialog h2{font-size:22px;margin:0 30px 18px 0}.vm-dialog h3{font-size:17px;margin:20px 0 8px}.vm-dialog input,.vm-dialog textarea,.vm-dialog select{width:100%;box-sizing:border-box;background:#23334b;border:1px solid #52647c;color:#fff;border-radius:9px;padding:11px;margin:6px 0 11px}.vm-dialog button.vm-action,.vm-dialog .vm-action{border:0;background:#387bb6;color:#fff;padding:10px 14px;border-radius:9px;cursor:pointer;margin:4px 5px 4px 0;display:inline-block;text-decoration:none}.vm-dialog button.vm-secondary{background:#34465e}.vm-dialog .vm-note{color:#afc1d7;font-size:13px;line-height:1.5}.vm-dialog .vm-error{color:#ffb9b9}.vm-dialog .vm-success{color:#9fe4b0}.vm-avatar{display:inline-grid;place-items:center;border-radius:50%;background:#345d80;color:#fff;width:38px;height:38px;font-weight:700;flex-shrink:0}.vm-mark-actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.vm-mark-actions button{border:1px solid #7693b3;background:#1c3048;color:#fff;border-radius:10px;padding:9px 12px;cursor:pointer}.vm-mark-actions button.vm-active{background:#316b52;border-color:#5ac999}.vm-visitor-bar{border:1px solid #3c536c;background:#20324a;padding:12px;border-radius:12px;margin:14px 0;cursor:pointer}.vm-visitor-avatars{display:flex;gap:5px;margin-top:8px}.vm-visitor-avatars .vm-avatar{width:32px;height:32px;font-size:12px}.vm-profile-list{display:grid;gap:7px;max-height:180px;overflow:auto}.vm-profile-list>div{padding:8px;background:#22364e;border-radius:8px}.vm-switch{display:flex;gap:10px;align-items:center}.vm-switch input{width:auto}.vm-feedback-choice{display:flex;flex-wrap:wrap;gap:5px}@media(max-width:768px){.vm-desktop-profile{display:none!important}.vm-profile-trigger{width:34px;height:34px;min-width:34px;font-size:12px}.vm-dialog{padding:20px 15px}.vm-overlay{padding:8px}}@media(min-width:769px){.mobile-topbar .vm-profile-trigger{display:none}}
+
+/* Profile icon: clear user silhouette, consistent dark toolbar styling */
+.vm-profile-trigger{background:#243344;color:#eaf2ff;border:1px solid #4e6680;box-shadow:0 2px 8px rgba(0,0,0,.16);transition:background .15s,border-color .15s,transform .15s}
+.vm-profile-trigger:hover{background:#314761;border-color:#8eb5df;transform:translateY(-1px)}
+.vm-profile-trigger:focus-visible{outline:2px solid #9acaff;outline-offset:3px}
+.vm-profile-symbol{display:inline-flex;align-items:center;justify-content:center}
+.vm-user-icon{display:block}
+
+/* VastiMap 1.6 UI harmonization */
+#map.vm-map-dark .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.8) contrast(.95)}
+.vm-dialog{background:#101b2a;border:1px solid rgba(120,158,205,.22);border-radius:20px;padding:26px;box-shadow:0 24px 75px rgba(0,0,0,.55);font-family:inherit}
+.vm-dialog h2{font-size:22px;letter-spacing:-.02em}.vm-dialog h3{font-size:15px;font-weight:750;margin:0 0 14px}
+.vm-dialog .vm-action{font:inherit;font-size:13px;font-weight:650;border:1px solid rgba(119,162,215,.28);background:#23558b;border-radius:10px;padding:11px 14px;transition:background .15s,border-color .15s}
+.vm-dialog .vm-action:hover{background:#326aa5;border-color:#70a4e2}.vm-dialog .vm-secondary{background:#1a2a3d!important;color:#dceaff!important}
+.vm-dialog .vm-secondary:hover{background:#263e57!important}
+.vm-profile-heading{display:flex;align-items:center;gap:12px}.vm-profile-summary{font-size:13px;color:#a8bdd5;margin:0 0 18px}
+.vm-profile-section{border-top:1px solid rgba(145,168,202,.16);padding:22px 0 4px;margin-top:20px}
+.vm-profile-footer{border-top:1px solid rgba(145,168,202,.16);padding-top:18px;margin-top:22px}
+.vm-collection-actions{display:flex;gap:10px;flex-wrap:wrap}
+.vm-field-title{font-size:13px;font-weight:650;margin:16px 0 9px;color:#dce7f7}
+.vm-theme-options{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.vm-dialog .vm-theme-button{cursor:pointer;border:1px solid #405570;background:#1c2b3e;color:#d8e6f5;border-radius:11px;padding:12px;font:inherit;font-weight:650}
+.vm-dialog .vm-theme-button.vm-selected{background:#23466c;border-color:#74b3fa;box-shadow:inset 0 0 0 1px #74b3fa;color:#fff}
+.vm-feedback-choice{display:grid;grid-template-columns:1fr;gap:9px}
+.vm-feedback-choice .vm-action{display:flex!important;align-items:center;justify-content:flex-start;width:100%;box-sizing:border-box;margin:0!important;text-align:left}
+.vm-feedback-form{margin-top:16px;border:1px solid rgba(119,162,215,.2);border-radius:13px;background:#142236;padding:16px}
+.vm-dialog .vm-feedback-form h3{margin:0 0 16px}
+.vm-problem-options{border:0;padding:0;margin:0 0 14px;min-width:0;display:grid;gap:10px}
+.vm-problem-options legend{font-size:13px;font-weight:700;padding:0;margin-bottom:12px;color:#d9e7fa}
+.vm-dialog .vm-radio-option{display:flex;align-items:center;gap:12px;cursor:pointer;padding:8px 10px;background:#1c2c40;border:1px solid #334b65;border-radius:9px;line-height:1.4}
+.vm-dialog .vm-radio-option input{appearance:auto!important;display:block;flex:0 0 17px;width:17px!important;height:17px!important;margin:0!important;padding:0!important;accent-color:#60a5fa}
+.vm-radio-option span{flex:1}
+.vm-message-field[hidden]{display:none!important}
+.vm-message-field label{display:block;font-size:13px;font-weight:650;margin-bottom:8px}
+.vm-dialog .vm-message-field textarea{width:100%;display:block;min-height:105px;resize:vertical;margin:0 0 12px}
+.vm-dialog .vm-switch input{width:17px!important;height:17px!important;flex:0 0 17px;margin:0!important;accent-color:#60a5fa}
+.vm-dialog .vm-switch{align-items:center;line-height:1.5;font-size:13px;gap:10px}
+.vm-mark-actions{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0 0}
+.vm-mark-actions button{display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(112,158,209,.38);background:#1b2d44;color:#dceafe;border-radius:999px;padding:7px 11px;font:inherit;font-size:12px;font-weight:650;cursor:pointer}
+.vm-mark-actions button:hover{background:#29496a;border-color:#83b7ed}
+.vm-mark-actions button.vm-active{background:#1d5647;border-color:#53ba97;color:#e5fff4}
+#vmPlaceVisitorsSection{padding-top:15px;padding-bottom:15px}
+#vmPlaceVisitorsSection[hidden]{display:none!important}
+#vmPlaceVisitorsSection h3{display:flex;align-items:center;gap:7px}
+.vm-visitor-count{font-size:11px;color:#9fc6f6;font-weight:700}
+.vm-visitor-empty{font-size:12px;color:#98acc3;margin:4px 0}
+.vm-visitor-bar{width:100%;border:0;background:transparent;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0;cursor:pointer;text-align:left}
+.vm-visitor-avatars{display:flex;gap:5px;align-items:center}
+.vm-visitor-avatars .vm-avatar{width:32px;height:32px;font-size:11px;border:1px solid #7896b7}
+.vm-more-avatar{background:#2c4058}
+.vm-visitor-chevron{color:#9fb6ce;font-size:18px}
+.vm-visitor-names{color:#d8e5f4;font-size:12px;line-height:1.7;padding:9px 0 2px}
+.vm-visitor-names[hidden]{display:none!important}
+@media(max-width:480px){.vm-dialog{padding:20px 16px}.vm-theme-options{gap:7px}.vm-mark-actions button{font-size:11px;padding:7px 9px}}
+
+/* VastiMap 1.6 - mobile landscape, profile collections and place marks */
+.vm-profile-list{max-height:260px;overflow-y:auto;gap:6px}
+.vm-profile-list .vm-profile-place-row{display:flex;align-items:center;gap:8px;padding:0;background:#1d2d43;border:1px solid rgba(135,164,201,.15);border-radius:10px}
+.vm-profile-place-link{flex:1;min-width:0;text-align:left;color:#e4efff;background:transparent;border:0;padding:11px 12px;cursor:pointer;font:inherit;font-size:13px}
+.vm-profile-place-link:hover{text-decoration:underline;color:#fff}
+.vm-profile-place-remove{display:grid;place-items:center;flex:none;width:38px;height:38px;margin-right:3px;background:transparent;border:0;border-radius:8px;color:#9fb4cb;cursor:pointer}
+.vm-profile-place-remove:hover{background:#4a2835;color:#ffc0c8}
+.vm-profile-place-remove:focus-visible,.vm-profile-place-link:focus-visible{outline:2px solid #78b7ff;outline-offset:1px}
+.vm-dialog .vm-switch{margin:12px 0;align-items:center}
+.vm-mark-actions{margin:7px 0 11px;align-items:center;gap:8px}
+.vm-mark-actions button{margin:0;min-height:34px}
+.vm-mark-checkbox{display:inline-flex;align-items:center;gap:7px;cursor:pointer;border:1px solid rgba(112,158,209,.38);background:#1b2d44;color:#dceafe;border-radius:999px;padding:7px 11px;font-size:12px;font-weight:650;line-height:18px;min-height:34px;box-sizing:border-box}
+.vm-mark-checkbox:has(input:checked){background:#1d5647;border-color:#53ba97;color:#e5fff4}
+.vm-mark-checkbox input{position:absolute;opacity:0;width:1px;height:1px}
+.vm-mark-checkvisual{display:grid;place-items:center;width:16px;height:16px;border:1.5px solid currentColor;border-radius:4px;font-size:0}
+.vm-mark-checkbox input:checked+.vm-mark-checkvisual{background:#55bb97;color:#10291f;font-size:12px}
+.vm-mark-checkbox:has(input:focus-visible){outline:2px solid #9bc8ff;outline-offset:2px}
+/* Keep profile accessible even in short landscape phone viewports. */
+@media (max-width:950px) and (orientation:landscape){
+ .mobile-topbar-actions>.vm-profile-trigger{display:inline-grid!important;flex:none;width:32px;height:32px;min-width:32px;order:-1}
+ .mobile-brand{flex:0 1 auto;min-width:0}
+ .mobile-topbar-actions{flex:0 0 auto;gap:3px}
+ .mobile-topbar{min-width:0}
+}
+@media (max-width:768px){.vm-profile-trigger{flex-shrink:0}}
+
+/* 1.6.1: Phone landscape must use mobile profile regardless of 768px breakpoint.
+   Landscape phones can report CSS widths above 768px (e.g. 952px). */
+@media (orientation: landscape) and (max-height: 500px) and (max-width: 1100px) and (pointer: coarse) {
+  .mobile-topbar .vm-profile-trigger {
+    display: inline-grid !important;
+    flex: 0 0 32px;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    order: -1;
+    visibility: visible;
+    opacity: 1;
+  }
+  .vm-desktop-profile { display: none !important; }
+  .mobile-topbar-actions { display: flex; align-items: center; flex-shrink: 0; gap: 3px; }
+}
+
+/* Standalone map theme controls; compact on phones and phone landscape. */
+.vm-theme-control{position:relative;flex:0 0 auto;z-index:1500}
+.vm-theme-trigger{width:36px;height:36px;display:grid;place-items:center;border:1px solid #50637a;border-radius:50%;background:#243344;color:#eaf2ff;cursor:pointer;font-size:21px;line-height:1}
+.vm-theme-trigger:hover,.vm-theme-trigger:focus-visible{background:#314761;border-color:#91b8e5}
+.vm-theme-popover[hidden]{display:none!important}
+.vm-theme-popover{position:absolute;right:0;top:calc(100% + 12px);min-width:220px;padding:13px;background:#172332;color:#edf4ff;border:1px solid #3a526d;border-radius:13px;box-shadow:0 12px 30px #0008;z-index:2500}
+.vm-theme-caption{display:block;font-size:12px;color:#a9bed7;margin-bottom:10px;font-weight:700}
+.vm-theme-segment{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:#0e1927;border-radius:10px}
+.vm-theme-segment button{border:1px solid transparent;background:transparent;color:#cbd8e8;border-radius:8px;padding:9px 5px;white-space:nowrap;font:inherit;font-size:12px;cursor:pointer}
+.vm-theme-segment button.vm-theme-active{background:#315679;color:#fff;border-color:#6388b3}
+.mobile-topbar .vm-theme-trigger{width:32px;height:32px;font-size:18px}
+.mobile-topbar-actions>.vm-theme-control{order:-2}
+@media (min-width:769px) and (min-height:501px){.mobile-topbar .vm-theme-control{display:none}}
+@media (max-width:768px), (max-height:500px) and (pointer:coarse){.desktop-toolbar .vm-theme-control{display:none!important}.mobile-topbar .vm-theme-control{display:block!important}}
+
+/* Single-tap theme toggle, no dropdown (desktop and mobile). */
+.vm-theme-trigger{width:72px;min-width:72px;height:34px;border-radius:18px;font-size:15px;white-space:nowrap;padding:0 14px 0 6px}
+.vm-theme-trigger-icon{display:inline-block;white-space:nowrap;line-height:1}
+.mobile-topbar .vm-theme-trigger{width:55px;min-width:55px;height:32px;font-size:13px;padding:0 9px 0 3px}

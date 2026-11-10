@@ -3,9 +3,9 @@
 	<head>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=overlays-content">
-		<title>Vasti térképe</title>
+		<title>VastiMap</title>
 		<meta name="description" content="Személyesen válogatott helyek és programok egy interaktív térképen – ötletek hétvégére, kiránduláshoz és szabadidőhöz.">
-		<meta property="og:title" content="Vasti Map – Hova a picsába menjünk?">
+		<meta property="og:title" content="VastiMap">
 		<meta property="og:description" content="Személyesen válogatott helyek és programok egy interaktív térképen – ötletek hétvégére, kiránduláshoz és szabadidőhöz.">
 		<meta property="og:type" content="website">
 		<meta property="og:url" content="https://vastikrisz.github.io/vasti_map/">
@@ -14,7 +14,7 @@
 		<meta property="og:image:height" content="630">
 		<meta property="og:locale" content="hu_HU">
 		<meta name="twitter:card" content="summary_large_image">
-		<meta name="twitter:title" content="Vasti Map – Hova a picsába menjünk?">
+		<meta name="twitter:title" content="VastiMap">
 		<meta name="twitter:description" content="Személyesen válogatott helyek és programok egy interaktív térképen.">
 		<meta name="twitter:image" content="https://vastikrisz.github.io/vasti_map/assets/social-preview.png">
 		<script defer src="https://cloud.umami.is/script.js" data-website-id="582f0f08-bdea-4f9f-a26f-2271e3f69b02" data-domains="vastikrisz.github.io"></script>
@@ -31,11 +31,11 @@
 			<!-- Mobile -->
 			<header class="mobile-topbar">
 				<div class="mobile-brand">
-					<span>Vasti „Hova a picsába menjünk?” térképe</span>
+					<span>VastiMap</span>
 					<span class="app-version">v1.1</span>
 				</div>
 
-				<div class="mobile-topbar-actions">
+				<div class="mobile-topbar-actions"><div class="vm-theme-control"><button type="button" class="vm-theme-trigger" aria-label="Váltás sötét térképre" title="Váltás sötét térképre"><span class="vm-theme-trigger-icon" aria-hidden="true">☀️ / 🌙</span></button></div><button class="vm-profile-trigger" type="button" aria-label="Profil" title="Profil"><span class="vm-profile-symbol"><svg class="vm-user-icon" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20v-1.5a6.5 6.5 0 0 1 13 0V20"/></svg></span></button>
 					<button id="mobileListButton" class="mobile-nav-button mobile-list-button" type="button" aria-label="Helyek listája" aria-controls="listPanel" aria-expanded="false">
 						<svg viewBox="0 0 24 24" aria-hidden="true" class="mobile-icon">
 							<rect x="4" y="5" width="6" height="5" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.8"></rect>
@@ -66,7 +66,7 @@
 				<header class="topbar">
 					<div class="topbar-brand">
 						<div class="topbar-title-row">
-							<h1>Vasti „hova a picsába menjünk?” térképe</h1>
+							<h1>VastiMap</h1>
 							<span class="app-version">v1.1</span>
 						</div>
 						<p>Saját gyűjtemény, egy helyen.</p>
@@ -94,6 +94,8 @@
 							</div>
 						</div>
 
+						<button class="vm-profile-trigger vm-desktop-profile" type="button" aria-label="Profil" title="Profil"><span class="vm-profile-symbol"><svg class="vm-user-icon" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20v-1.5a6.5 6.5 0 0 1 13 0V20"/></svg></span></button>
+						<div class="vm-theme-control"><button type="button" class="vm-theme-trigger" aria-label="Váltás sötét térképre" title="Váltás sötét térképre"><span class="vm-theme-trigger-icon" aria-hidden="true">☀️ / 🌙</span></button></div>
 						<button id="desktopEventsButton" class="toolbar-button events-highlight" type="button" aria-controls="desktopEventsPanel" aria-expanded="false">
 							<span class="toolbar-icon">◫</span>
 							Események
@@ -311,5 +313,8 @@
 		<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 		<script src="config.js"></script>
 		<script src="script.js"></script>
-	</body>
+<div id="vmProfileOverlay" class="vm-overlay" hidden><section class="vm-dialog" role="dialog" aria-modal="true" aria-label="VastiMap profil"><button id="vmCloseProfile" class="vm-close" type="button" aria-label="Bezárás">×</button><div id="vmProfileBody"></div></section></div>
+<script src="theme16.js"></script>
+<script src="profile16.js"></script>
+</body>
 </html>

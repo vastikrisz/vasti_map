@@ -87,10 +87,15 @@ const map = L.map("map", {
 	maxZoom: 19
 }).setView([47.1625, 19.5033], 7);
 
-L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+const vmLightTiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
 	maxZoom: 19,
 	attribution: "&copy; OpenStreetMap közreműködők"
-}).addTo(map);
+});
+vmLightTiles.addTo(map);
+// Dark presentation reuses existing OSM tiles; no external API key required.
+window.vmSetMapTheme = function(theme) {
+  document.getElementById('map')?.classList.toggle('vm-map-dark', theme === 'dark');
+};
 
 const markerLayer = L.markerClusterGroup({
 	showCoverageOnHover: false,
@@ -482,7 +487,7 @@ function formatOpeningSchedule(schedule) {
  const modes={always:"0–24 órában látogatható",appointment:"Csak előzetes bejelentkezéssel látogatható",unknown:"Nincs információ a nyitvatartásról",temporary:"Átmenetileg zárva"};
  if(schedule.mode!=="schedule")return escapeHtml(modes[schedule.mode]||"Nincs információ a nyitvatartásról");
  const today=new Date();today.setHours(0,0,0,0);
- const inSeason=(date,s)=>{const mmdd=(date.getMonth()+1)*100+date.getDate();const a=Number(s.start?.replace("-","")),b=Number(s.end?.replace("-",""));return a<=b?mmdd>=a&&mmdd<=b:mmdd>=a||mmdd<=b;};
+ const inSeason=(date,s)=>{const mmdd=(date.getMonth()+1)*100+date.getDate();const a=Number(s.start?.replace("-","")),b=Number(s.end?.replace("-",""));const effectiveEnd=b===228 && date.getMonth()===1 && new Date(date.getFullYear(),1,29).getMonth()===1 ? 229 : b;return a<=effectiveEnd?mmdd>=a&&mmdd<=effectiveEnd:mmdd>=a||mmdd<=effectiveEnd;};
  const weekday=(date)=>(date.getDay()+6)%7;
  const seasons=schedule.seasons||[];
  const active=seasons.filter(s=>inSeason(today,s));
@@ -806,6 +811,7 @@ function isMuseumPlace(place) {
 
 function computeVisiblePlaces() {
 	return browseablePlaces.filter((place) => {
+        if(window.vmShouldHideVisited?.(place.id))return false;
 		const categoryMatches = selectedCategories.size === 0 ||
 			place.categories.some((category) => selectedCategories.has(category));
 
@@ -1193,6 +1199,7 @@ function getListPlaces() {
 	const searchText = listSearchInput.value.trim().toLocaleLowerCase("hu");
 	const sortMode = listSortSelect.value;
 	const filteredPlaces = browseablePlaces.filter((place) => {
+        if(window.vmShouldHideVisited?.(place.id))return false;
 		const categoryMatches = listSelectedCategories.size === 0 ||
 			place.categories.some((category) => listSelectedCategories.has(category));
 
@@ -2035,10 +2042,12 @@ function openPlaceDetails(placeId, options = {}) {
 				<span class="details-city">${escapeHtml(place.city || "Hely")}</span>
 				<h2>${escapeHtml(place.name)}</h2>
 				<div class="category-list">${categoryTags}</div>
+                <div id="vmPlaceMarkActions" data-place-id="${Number(place.id)}"></div>
 			</div>
 		</div>
 
 		<div class="details-full-content">
+            <section id="vmPlaceVisitorsSection" class="info-block" data-place-id="${Number(place.id)}" hidden></section>
 			<section class="info-block">
 				<h3>Cím</h3>
 				<p>${escapeHtml(place.address)}</p>
@@ -2066,6 +2075,7 @@ function openPlaceDetails(placeId, options = {}) {
 		</div>
 	`;
 
+    if (window.vmRenderPlaceExtras) window.vmRenderPlaceExtras(place.id);
 	if (panMap) {
 		map.panTo([place.latitude, place.longitude], { animate: true, duration: 0.35 });
 	}
@@ -2559,3 +2569,8 @@ async function initializeApp() {
 }
 
 initializeApp();
+
+/* Profile integrations: reuse existing marker and list renderers. */
+window.vmGetPlaceById=(id)=>getPlaceById(Number(id));
+window.vmNavigateToPlace=(id)=>{const p=getPlaceById(Number(id));if(p)focusPlace(p,true)};
+window.vmRefreshVisitedFilter=()=>{applyFilters();renderPlaceList()};

@@ -1363,6 +1363,7 @@ async function saveEvent(event) {
 // Notifications
 function switchAdminView(view) {
 	const showPlaces = view === "places";
+ if(window.vmAdminSwitch)window.vmAdminSwitch(view);
 	const showEvents = view === "events";
 	const showNotifications = view === "notifications";
  const showChangelog = view === "changelog";

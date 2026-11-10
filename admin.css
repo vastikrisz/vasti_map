@@ -1415,3 +1415,14 @@ input[type="file"]::file-selector-button {
 .structured-editor-panel .secondary-button {justify-self: start;min-width: 150px;}
 .structured-editor-panel .structured-row {background: #0e1621;}
 @media (max-width: 720px) { .structured-editor-panel {padding: 12px;} }
+
+/* VastiMap 1.6: native admin dashboard styling */
+.vm-admin-view{width:100%;min-width:0;box-sizing:border-box;padding:20px 0}
+.vm-admin-view-head{margin:0 0 20px;padding:0 0 16px;border-bottom:1px solid rgba(139,167,200,.2)}
+.vm-admin-view-head h2{margin:0 0 6px;font-size:22px;font-weight:750;color:var(--text-primary,#eaf2ff)}
+.vm-admin-view-head p{margin:0;color:var(--text-secondary,#9db1c7);font-size:13px}
+.vm-admin-items{display:grid;gap:12px}
+.vm-admin-row{background:var(--card-bg,#17283c);border:1px solid rgba(132,166,208,.19);color:var(--text-primary,#eaf2ff);padding:16px 18px;border-radius:12px;display:flex;gap:15px;align-items:center;justify-content:space-between;flex-wrap:wrap;min-width:0}
+.vm-admin-row strong{font-size:14px}.vm-admin-row small{color:#a6b7cc}.vm-admin-row p{margin:7px 0;overflow-wrap:anywhere;font-size:13px;line-height:1.55}
+.vm-admin-row button,.vm-admin-row select{background:#24466a;border:1px solid #557ca5;border-radius:9px;padding:9px 12px;color:#fff;font:inherit;cursor:pointer}
+.vm-admin-row button:hover{background:#35628c}

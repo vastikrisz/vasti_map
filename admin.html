@@ -22,7 +22,7 @@
 					<button id="loginButton" type="submit">Belépés</button>
 				</form>
 				<p id="loginMessage" class="message" aria-live="polite"></p>
-				<a class="back-link" href="index.html">Vissza a térképhez</a>
+<a class="back-link" href="index.html">Vissza a térképhez</a>
 			</section>
 			<!-- Dashboard -->
 			<section id="dashboardSection" class="admin-card dashboard-card hidden">
@@ -36,10 +36,14 @@
 				<p id="userEmail" class="user-email"></p>
 				<div class="admin-tabs">
 					<button id="placesTabButton" class="admin-tab active" type="button">Helyek</button>
-					<button id="eventsTabButton" class="admin-tab" type="button">Események</button>
+					<button id="vmUsersTabButton" class="admin-tab" type="button">Felhasználók</button>
+<button id="vmFeedbackTabButton" class="admin-tab" type="button">Visszajelzések</button>
+<button id="eventsTabButton" class="admin-tab" type="button">Események</button>
 					<button id="notificationsTabButton" class="admin-tab" type="button">Értesítések</button>
 <button id="changelogTabButton" class="admin-tab" type="button">Mi változott?</button>
 				</div>
+                <section id="vmAdminUsers" class="vm-admin-view hidden"><div class="vm-admin-view-head"><h2>Felhasználók</h2><p>Regisztrációk és jóváhagyások kezelése</p></div><div id="vmAdminUsersBody" class="vm-admin-items"></div></section>
+                <section id="vmAdminFeedback" class="vm-admin-view hidden"><div class="vm-admin-view-head"><h2>Visszajelzések</h2><p>Beérkezett problémák és helyajánlások</p></div><div id="vmAdminFeedbackBody" class="vm-admin-items"></div></section>
 				<!-- Places -->
 				<div id="placesAdminView" class="dashboard-grid">
 					<form id="placeForm" class="place-form">
@@ -464,5 +468,6 @@
 		<script src="config.js"></script>
 		<script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
 		<script src="admin.js"></script>
+<script src="admin16.js"></script>
 	</body>
 </html>
