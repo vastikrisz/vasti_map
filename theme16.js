@@ -22,5 +22,7 @@
       apply(theme === 'dark' ? 'light' : 'dark');
     });
   });
+  window.vmApplyMapTheme = apply;
+  window.vmGetMapTheme = () => theme;
   apply(theme);
 })();

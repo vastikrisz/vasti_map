@@ -1426,3 +1426,23 @@ input[type="file"]::file-selector-button {
 .vm-admin-row strong{font-size:14px}.vm-admin-row small{color:#a6b7cc}.vm-admin-row p{margin:7px 0;overflow-wrap:anywhere;font-size:13px;line-height:1.55}
 .vm-admin-row button,.vm-admin-row select{background:#24466a;border:1px solid #557ca5;border-radius:9px;padding:9px 12px;color:#fff;font:inherit;cursor:pointer}
 .vm-admin-row button:hover{background:#35628c}
+
+/* Desktop admin workspace: one persistent sidebar, original tab IDs and behavior. */
+@media (min-width:1100px) and (pointer:fine) {
+ .dashboard-card:not(.hidden){position:relative;padding:22px 26px 22px 240px;max-width:none;background:#0e1825;border:1px solid #283d56}
+ .dashboard-card .dashboard-header{min-height:65px;border-bottom:1px solid #263c55;margin-bottom:15px}
+ .dashboard-card .dashboard-header h1{font-size:24px;letter-spacing:-.03em}
+ .dashboard-card .dashboard-header .subtitle{color:#8ea9c5}
+ .dashboard-card .admin-tabs{position:absolute;top:0;bottom:0;left:0;width:215px;margin:0;padding:92px 12px 22px;display:flex;flex-direction:column;gap:7px;background:#101d2d;border-right:1px solid #2b4059;overflow-y:auto}
+ .dashboard-card .admin-tabs:before{content:'VASTIMAP  /  ADMIN';position:absolute;top:29px;left:18px;font-size:12px;letter-spacing:.11em;font-weight:800;color:#8cbbf5}
+ .dashboard-card .admin-tab{width:100%;text-align:left;padding:13px 15px;border-radius:11px;border-color:transparent;background:transparent;color:#a7bdd5;min-height:44px}
+ .dashboard-card .admin-tab:hover{background:#1b3047;color:#fff}
+ .dashboard-card .admin-tab.active{background:#22476d;color:#fff;border-color:#477cad}
+ .vm-admin-overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 18px}
+ .vm-admin-overview>div{background:#182a3e;border:1px solid #2c435e;border-radius:13px;padding:13px 17px;display:flex;flex-direction:column;gap:5px}
+ .vm-admin-overview span{font-size:12px;color:#a7bdd5}.vm-admin-overview strong{font-size:23px;color:#e9f4ff}
+ .dashboard-card .place-form,.dashboard-card .event-form,.dashboard-card .places-manager,.dashboard-card .events-manager{background:#111f2e;border-color:#2b4159;border-radius:15px}
+ .dashboard-card input,.dashboard-card select,.dashboard-card textarea{border-radius:9px}
+ .dashboard-card button{transition:background .16s,border-color .16s}
+}
+@media (max-width:1099px), (pointer:coarse){.vm-admin-overview{display:none}}

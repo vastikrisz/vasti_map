@@ -1356,7 +1356,7 @@ body.list-open .leaflet-top.leaflet-left {
 
 /* Mobile */
 
-@media (max-width: 768px), (max-width: 1180px) and (orientation: landscape) and (pointer: coarse) {
+@media (max-width: 768px), (max-width: 1180px) and (max-height: 500px) and (orientation: landscape) and (pointer: coarse) {
 	.topbar {
 		display: none;
 	}
@@ -1722,7 +1722,7 @@ body.list-open .leaflet-top.leaflet-left {
 
 /* Landscape */
 
-@media (max-width: 1180px) and (orientation: landscape) and (pointer: coarse) {
+@media (max-width: 1180px) and (max-height: 500px) and (orientation: landscape) and (pointer: coarse) {
 	:root {
 		--landscape-list-width: min(440px, 48vw);
 		--landscape-events-width: min(390px, 44vw);
@@ -2583,13 +2583,13 @@ body.list-open .leaflet-top.leaflet-left {
 
 /* Panel sizing */
 
-@media (max-width: 768px), (max-width: 1180px) and (orientation: landscape) and (pointer: coarse) {
+@media (max-width: 768px), (max-width: 1180px) and (max-height: 500px) and (orientation: landscape) and (pointer: coarse) {
 	.desktop-events-panel {
 		max-height: none;
 	}
 }
 
-@media (max-width: 1180px) and (orientation: landscape) and (pointer: coarse) {
+@media (max-width: 1180px) and (max-height: 500px) and (orientation: landscape) and (pointer: coarse) {
 	.desktop-events-panel {
 		max-height: calc(var(--visual-viewport-height) - 12px);
 	}
@@ -2825,7 +2825,7 @@ body.list-open .leaflet-top.leaflet-left {
 	font-weight: 850;
 }
 
-@media (max-width: 1180px) and (orientation: landscape) and (pointer: coarse) {
+@media (max-width: 1180px) and (max-height: 500px) and (orientation: landscape) and (pointer: coarse) {
 	.filter-panel .free-filter-button {
 		width: 42px;
 		height: 34px;
@@ -2930,7 +2930,7 @@ select:focus-visible,
 	}
 }
 
-@media (max-width: 1180px) and (orientation: landscape) and (pointer: coarse) {
+@media (max-width: 1180px) and (max-height: 500px) and (orientation: landscape) and (pointer: coarse) {
 	:root {
 		--landscape-filter-width: 66px;
 	}
@@ -3230,7 +3230,7 @@ select:focus-visible,
 }
 
 /* Mobile list */
-@media (max-width: 768px), (max-width: 1180px) and (orientation: landscape) and (pointer: coarse) {
+@media (max-width: 768px), (max-width: 1180px) and (max-height: 500px) and (orientation: landscape) and (pointer: coarse) {
 	.list-filter-row {
 		padding-top: 10px;
 		transition: padding-bottom 0.24s cubic-bezier(0.22, 1, 0.36, 1);
@@ -3366,7 +3366,7 @@ select:focus-visible,
 	}
 }
 
-@media (max-width: 1180px) and (orientation: landscape) and (pointer: coarse) {
+@media (max-width: 1180px) and (max-height: 500px) and (orientation: landscape) and (pointer: coarse) {
 	.filter-panel:not(.mobile-open) .price-filter-section {
 		opacity: 0;
 		visibility: hidden;
@@ -3733,7 +3733,7 @@ body.onboarding-open .help-button {
 	}
 }
 
-@media (max-width: 1180px) and (orientation: landscape) and (pointer: coarse),
+@media (max-width: 1180px) and (max-height: 500px) and (orientation: landscape) and (pointer: coarse),
        (max-height: 620px) and (orientation: landscape) {
 	.onboarding-overlay {
 		padding: 10px 14px;
@@ -3955,3 +3955,616 @@ body.onboarding-open .help-button {
 .vm-theme-trigger{width:72px;min-width:72px;height:34px;border-radius:18px;font-size:15px;white-space:nowrap;padding:0 14px 0 6px}
 .vm-theme-trigger-icon{display:inline-block;white-space:nowrap;line-height:1}
 .mobile-topbar .vm-theme-trigger{width:55px;min-width:55px;height:32px;font-size:13px;padding:0 9px 0 3px}
+
+/* VastiMap desktop visual refresh. All rules intentionally exclude touch/mobile layouts. */
+@media (min-width:769px) {
+ :root{--vm-ui-bg:#101b2a;--vm-ui-card:#18283a;--vm-ui-border:rgba(137,170,210,.19);--vm-ui-blue:#448bd5}
+ .topbar{background:rgba(13,23,35,.96);border:1px solid var(--vm-ui-border);box-shadow:0 10px 30px #06101b44}
+ .topbar .toolbar-button,.desktop-list-tab,.vm-theme-trigger{border-color:var(--vm-ui-border);transition:background .16s,border-color .16s,transform .16s}
+ .topbar button:hover{border-color:#78b4f1}
+ .desktop-list-tab.active{background:#235b9d;color:#fff;border-color:#5a9de4}
+ /* The list is a full browsing view, not a map sidebar. The toolbar remains visible. */
+ #listPanel{position:fixed;top:91px;bottom:0;left:0;right:0;width:100%;max-width:none;min-height:0;z-index:555;border-radius:0;border:0;background:#0d1724;padding:24px clamp(24px,5vw,88px) 28px;transform:none;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .18s ease,visibility .18s ease}
+ #listPanel.open{transform:none;opacity:1;visibility:visible;pointer-events:auto}
+ #listPanel .list-panel-header{max-width:1460px;width:100%;margin:0 auto 18px;display:flex;align-items:center;justify-content:space-between}
+ #listPanel .list-panel-header h2{font-size:26px;letter-spacing:-.035em;margin-top:4px}
+ #listPanel .list-panel-body{width:100%;max-width:1460px;margin:auto;overflow:hidden}
+ #listPanel .list-tools{grid-template-columns:minmax(260px,1fr) 180px;gap:12px}
+ #listPanel .list-controls{padding-bottom:12px;border-bottom:1px solid var(--vm-ui-border)}
+ #listPanel .list-categories{max-height:none;overflow-x:auto;overflow-y:hidden;white-space:nowrap;padding:4px 0}
+ #placesListView{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));align-content:start;gap:18px;padding:12px 6px 30px 0;overflow-y:auto;scrollbar-gutter:stable}
+ #placesListView .list-place-card{display:flex;flex-direction:column;align-items:stretch;gap:0;min-width:0;min-height:245px;padding:0;overflow:hidden;background:var(--vm-ui-card);border:1px solid var(--vm-ui-border);border-radius:16px;content-visibility:auto;contain-intrinsic-size:auto 250px;transition:transform .16s,border-color .16s,box-shadow .16s}
+ #placesListView .list-place-card:hover{transform:translateY(-2px);border-color:#568cc4;box-shadow:0 12px 24px #0004}
+ #placesListView .list-place-image,#placesListView .list-place-placeholder{width:100%;height:155px;border-radius:0}
+ #placesListView .list-place-image img{width:100%;height:100%;object-fit:cover}
+ #placesListView .list-place-copy{padding:14px 15px 16px;min-width:0;display:flex;flex-direction:column;gap:6px}
+ #placesListView .list-place-copy strong{font-size:15px;line-height:1.35}
+ #placesListView .list-place-copy>span{font-size:12px;color:#a6b9cf}
+ #placesListView .list-place-arrow{display:none}
+ #placesListView .list-place-meta{margin-top:auto}
+ /* Place detail stays an overlay on the map, with desktop-only disclosure cards. */
+ #detailsPanel{width:min(510px,42vw);padding:24px 26px;background:#101b2a;border-left:1px solid var(--vm-ui-border);box-shadow:-12px 0 38px #0004}
+ #detailsPanel .place-image{height:250px;border-radius:14px;object-fit:cover}
+ #detailsPanel .details-summary-text h2{letter-spacing:-.035em;line-height:1.13}
+ #detailsPanel .info-block{border-color:var(--vm-ui-border)}
+ #detailsPanel .vm-desktop-info-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0 22px}
+ #detailsPanel .vm-desktop-info-card{min-width:0;background:var(--vm-ui-card);border:1px solid var(--vm-ui-border);border-radius:13px;overflow:hidden}
+ #detailsPanel .vm-desktop-info-card[open]{grid-column:span 2;border-color:#548bc4}
+ #detailsPanel .vm-desktop-info-card summary{list-style:none;display:flex;flex-direction:column;gap:6px;padding:15px;cursor:pointer;min-height:91px}
+ #detailsPanel .vm-desktop-info-card summary::-webkit-details-marker{display:none}
+ #detailsPanel .vm-desktop-info-card summary:hover{background:#243a51}
+ #detailsPanel .vm-info-icon{font-size:20px;color:#8ab8ef}
+ #detailsPanel .vm-desktop-info-card strong{font-size:13px;color:#e8f1ff}
+ #detailsPanel .vm-desktop-info-card small{font-size:11px;color:#a7c5e7}
+ #detailsPanel .vm-info-expand{padding:12px 15px 16px;border-top:1px solid var(--vm-ui-border);font-size:13px;line-height:1.65;color:#d9e5f3;overflow-wrap:anywhere}
+ #detailsPanel .vm-mobile-info-original{display:none}
+ /* Profile: emphasize personal collection and preview, without adding settings. */
+ .vm-dialog{width:min(800px,calc(100vw - 60px));padding:30px 34px;background:#101b2a;border:1px solid var(--vm-ui-border)}
+ .vm-dialog .vm-profile-heading{font-size:25px;display:flex;align-items:center;gap:14px}
+ .vm-dialog .vm-profile-heading .vm-avatar{width:60px;height:60px;font-size:19px;background:#335c8c}
+ .vm-dialog .vm-profile-summary{display:none}
+ .vm-desktop-profile-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:16px 0 25px}
+ .vm-desktop-profile-stats>div{background:var(--vm-ui-card);border:1px solid var(--vm-ui-border);border-radius:13px;padding:17px 20px;display:grid;gap:5px}
+ .vm-desktop-profile-stats strong{font-size:26px;color:#fff}.vm-desktop-profile-stats span{font-size:12px;color:#aebfd4}
+ .vm-desktop-bucket-preview{margin-bottom:18px}.vm-desktop-preview-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+ .vm-dialog .vm-desktop-preview-head h3{margin:0}.vm-desktop-preview-head button{background:none;border:0;color:#8bbffb;cursor:pointer;font:inherit;font-size:12px}
+ .vm-desktop-preview-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+ .vm-desktop-preview-place{padding:0;text-align:left;overflow:hidden;border-radius:12px;border:1px solid var(--vm-ui-border);background:var(--vm-ui-card);color:#e8f1ff;cursor:pointer}
+ .vm-desktop-preview-place img,.vm-preview-placeholder{width:100%;height:105px;display:grid;place-items:center;object-fit:cover;background:#243b53}
+ .vm-desktop-preview-place strong{display:block;padding:10px;font-size:12px;line-height:1.35}
+ .vm-dialog .vm-profile-section{border-top:1px solid var(--vm-ui-border);padding-top:18px;margin-top:20px}
+ .vm-dialog .vm-feedback-choice{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+ .vm-dialog .vm-feedback-choice .vm-action{display:flex;align-items:center;justify-content:center;text-align:center;margin:0;font-size:12px}
+}
+@media not all and (min-width:1024px), (pointer:coarse) {
+ .vm-desktop-info-pair,.vm-desktop-profile-stats,.vm-desktop-bucket-preview{display:none!important}
+}
+@media (min-width:769px) {
+ .desktop-events-panel{background:#101b2a;border:1px solid rgba(137,170,210,.22);box-shadow:0 20px 45px #0005}
+ .desktop-events-panel .event-card{border-radius:13px;border-color:rgba(137,170,210,.18);background:#18283a;margin-bottom:10px}
+ .desktop-events-panel .event-card h4{line-height:1.35;letter-spacing:-.01em}
+ .desktop-events-panel .event-card-meta,.desktop-events-panel .event-rule-text{color:#aec2d8;line-height:1.5}
+ .desktop-events-panel .event-date-badge{border-radius:11px}
+}
+
+/* Desktop 1.6 refinement – mobile remains unchanged */
+@media (min-width:769px){
+ .topbar{position:fixed!important;top:0!important;left:0!important;right:0!important;border-radius:0!important;border-left:0!important;border-right:0!important;border-top:0!important;min-height:78px!important;padding:10px 20px!important;gap:18px!important}
+ .topbar-brand{flex:0 0 auto!important;min-width:125px!important;max-width:150px!important}
+ .topbar-brand p{display:none}
+ .desktop-toolbar{gap:9px!important;min-width:0;display:flex!important;align-items:center}
+ .desktop-search-dock{flex:0 1 225px!important;width:clamp(155px,15vw,225px)!important}
+ #desktopListButton{position:static!important;transform:none!important;flex:0 0 auto;display:flex!important;align-items:center;gap:7px;height:38px;padding:0 13px;border-radius:10px;font-size:12px;white-space:nowrap}
+ .desktop-filter-wrap{min-width:0;flex:1 1 auto!important;gap:5px!important}
+ .desktop-category-filters{gap:4px!important;display:flex!important;min-width:0}
+ .desktop-filter-button{width:auto!important;min-width:0!important;padding:0 7px!important;display:flex!important;align-items:center;gap:5px;white-space:nowrap;font-size:11px!important}
+ .vm-filter-label{display:inline!important;font-size:10px;font-weight:650}
+ .desktop-free-filter{min-width:42px}
+ .desktop-result-tab{position:static!important;transform:none!important;margin:0!important;white-space:nowrap;min-width:47px;font-size:10px}
+ .vm-news-button{flex:0 0 37px;min-width:37px;padding:0;font-size:20px}
+ .vm-desktop-profile{flex:0 0 38px}
+ .toolbar-button.events-highlight{margin-left:0!important;flex:0 0 auto;white-space:nowrap}
+ #listPanel{top:78px!important;padding:22px clamp(20px,4vw,60px)!important;z-index:550!important}
+ #listPanel .list-panel-header,#listPanel .list-panel-body{max-width:1480px!important}
+ #listPanel .list-controls{display:none!important}
+ #placesListView{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:18px!important}
+ #detailsPanel{right:0!important;top:78px!important;bottom:0!important;height:auto!important;width:min(570px,45vw)!important;max-width:none!important;border-radius:0!important;padding:30px 24px 22px!important;scrollbar-color:#496d91 #101b2a;scrollbar-width:thin}
+ #detailsPanel::-webkit-scrollbar{width:9px}#detailsPanel::-webkit-scrollbar-track{background:#101b2a}#detailsPanel::-webkit-scrollbar-thumb{background:#496d91;border-radius:8px;border:2px solid #101b2a}
+ #detailsPanel .panel-close-button{position:sticky!important;top:0!important;float:right!important;z-index:10;background:#29445f!important;border:1px solid #6e99c7!important;box-shadow:0 3px 12px #0005}
+ #detailsPanel .info-block{padding:12px 0!important;margin:0!important}
+ #detailsPanel .info-block h3{margin:0 0 5px!important}
+ #detailsPanel .details-summary-text h2{margin-bottom:7px!important}
+ #detailsPanel .vm-desktop-info-pair{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:10px!important;margin:12px 0!important}
+ #detailsPanel .vm-desktop-info-card{padding:12px!important;overflow-wrap:anywhere;min-width:0}
+ #detailsPanel .vm-desktop-info-card strong{display:block;margin:4px 0 9px;font-size:13px}
+ #detailsPanel .vm-info-expand{border:0!important;padding:0!important;font-size:11px!important;line-height:1.45!important}
+ #detailsPanel .vm-info-expand p{margin:3px 0!important}
+ .vm-dialog{width:min(500px,calc(100vw - 60px))!important;padding:26px!important}
+ .vm-desktop-profile-stats{margin:15px 0!important}
+ .vm-dialog .vm-feedback-choice{grid-template-columns:1fr!important}
+}
+@media (min-width:1024px) and (max-width:1380px) and (pointer:fine){.vm-filter-label{font-size:9px}.desktop-filter-button{padding:0 5px!important}.topbar{gap:9px!important;padding:10px 12px!important}.desktop-toolbar{gap:5px!important}.desktop-search-dock{flex-basis:170px!important}}
+.vm-profile-hero{text-align:center;padding:4px 0 15px}.vm-avatar-large{width:68px!important;height:68px!important;font-size:24px!important;margin:auto auto 10px;background:#3a529d!important;border:2px solid #93a8f3}.vm-profile-hero h2{margin:0 0 3px!important;font-size:21px!important}.vm-profile-hero p{margin:0;color:#aebfd4;font-size:12px}.vm-profile-menu{display:grid;gap:0;background:#1a2b3e;border:1px solid #3c516b;border-radius:13px;overflow:hidden;margin:14px 0}.vm-profile-menu button{width:100%;padding:15px;text-align:left;background:none;border:0;border-bottom:1px solid #35485f;color:#eef5ff;font-weight:650;cursor:pointer;font-size:14px}.vm-profile-menu button:last-child{border-bottom:0}.vm-profile-menu button:disabled{opacity:.35;cursor:not-allowed}.vm-profile-menu button:not(:disabled):hover{background:#2b4360}.vm-profile-footer{display:flex;gap:10px;margin-top:18px}.vm-settings-group{background:#1a2b3e;border:1px solid #3c516b;border-radius:12px;padding:12px;margin:12px 0}.vm-settings-group h4{margin:0 0 12px}.vm-dialog .vm-switch{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:10px 0}.vm-dialog .vm-switch input{width:18px;height:18px;flex-shrink:0;margin:0}.vm-profile-section[hidden]{display:none!important}
+/* User interface theme independent of map theme and login. */
+:root[data-vm-ui-theme="light"] .vm-dialog{background:#f6f8fc!important;color:#142338!important;border-color:#ccd8e7!important}
+:root[data-vm-ui-theme="light"] .vm-profile-menu,:root[data-vm-ui-theme="light"] .vm-settings-group,:root[data-vm-ui-theme="light"] .vm-desktop-profile-stats>div{background:#e6edf6!important;border-color:#c4d2e2!important;color:#142338!important}
+:root[data-vm-ui-theme="light"] .vm-profile-menu button{color:#142338!important;border-color:#c4d2e2!important}
+:root[data-vm-ui-theme="light"] .vm-profile-hero p,:root[data-vm-ui-theme="light"] .vm-desktop-profile-stats span{color:#52667e!important}
+@media (min-width:769px){:root[data-vm-ui-theme="light"] .topbar{background:#f4f7fb!important;color:#15253b!important;border-color:#cbd7e5!important}:root[data-vm-ui-theme="light"] #listPanel,:root[data-vm-ui-theme="light"] #detailsPanel,:root[data-vm-ui-theme="light"] .desktop-events-panel{background:#f4f7fb!important;color:#15253b!important}:root[data-vm-ui-theme="light"] #placesListView .list-place-card,:root[data-vm-ui-theme="light"] #detailsPanel .vm-desktop-info-card{background:#e8eef6!important;color:#15253b!important;border-color:#cbd7e5!important}:root[data-vm-ui-theme="light"] #placesListView .list-place-copy strong,:root[data-vm-ui-theme="light"] #detailsPanel .vm-desktop-info-card strong{color:#15253b!important}}
+/* Shared profile layout also on mobile, as requested. */
+.vm-dialog .vm-desktop-profile-stats{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.vm-dialog .vm-desktop-profile-stats>div{background:#1a2b3e;border:1px solid #3c516b;border-radius:12px;padding:14px;text-align:center;display:grid;gap:3px}
+.vm-dialog .vm-desktop-profile-stats strong{font-size:24px;color:inherit}
+.vm-dialog .vm-desktop-profile-stats span{font-size:12px;color:#aebfd4}
+.vm-news-dialog{width:min(560px,calc(100vw - 24px))}
+.vm-news-dialog .changelog-list{padding:4px 0 0 22px}
+.vm-news-dialog .changelog-list li{padding:4px 0}
+
+/* 1.6 desktop polish / shared controls */
+:root{scrollbar-color:#486986 #111f30;scrollbar-width:thin}
+*::-webkit-scrollbar{width:9px;height:9px}
+*::-webkit-scrollbar-track{background:#101d2c;border-radius:9px}
+*::-webkit-scrollbar-thumb{background:#466784;border-radius:9px;border:2px solid #101d2c}
+*::-webkit-scrollbar-thumb:hover{background:#6997be}
+.vm-close,.onboarding-close,.panel-close-button{display:grid!important;place-items:center!important;width:38px!important;height:38px!important;line-height:1!important;font-size:23px!important;border-radius:50%!important;background:#23364c!important;border:1px solid #526b85!important;color:#f1f7ff!important;cursor:pointer!important}
+.vm-close:hover,.onboarding-close:hover,.panel-close-button:hover{background:#375675!important;border-color:#83b8ed!important}
+.vm-news-button{display:inline-flex!important;align-items:center!important;justify-content:center!important}
+.vm-settings-back{border:0;background:transparent;color:#a7cbf5;padding:5px 0 16px;cursor:pointer;font:inherit;font-size:13px}
+.vm-settings-back:hover{color:#fff}
+.vm-settings-screen h2{margin-bottom:20px!important}
+.vm-toggle-row input[type=checkbox]{appearance:none!important;-webkit-appearance:none!important;position:relative;width:43px!important;height:25px!important;min-width:43px!important;border-radius:99px!important;background:#40516b!important;border:1px solid #60768f!important;cursor:pointer;margin:0!important;padding:0!important;transition:background .2s}
+.vm-toggle-row input[type=checkbox]:checked{background:#2467d9!important;border-color:#5c9dff!important}
+.vm-toggle-row input[type=checkbox]::before{content:"";position:absolute;top:3px;left:3px;width:17px;height:17px;border-radius:50%;background:#f6faff;box-shadow:0 1px 3px #0004;transition:transform .2s}
+.vm-toggle-row input[type=checkbox]:checked::before{transform:translateX(18px)}
+.vm-toggle-row input[type=checkbox]:focus-visible{outline:2px solid #8abfff;outline-offset:3px}
+:root[data-vm-ui-theme=light]{--vm-ui-card:#fff;--vm-ui-border:#d4deea}
+:root[data-vm-ui-theme=light] .vm-dialog,:root[data-vm-ui-theme=light] #listPanel,:root[data-vm-ui-theme=light] #detailsPanel{background:#f6f8fc!important;color:#1c2c42!important}
+:root[data-vm-ui-theme=light] .vm-profile-menu,:root[data-vm-ui-theme=light] .vm-settings-group,:root[data-vm-ui-theme=light] .vm-desktop-profile-stats>div{background:#fff!important;color:#1c2c42!important;border-color:#d4deea!important}
+:root[data-vm-ui-theme=light] .vm-profile-menu button,:root[data-vm-ui-theme=light] .vm-settings-group h4{color:#1c2c42!important}
+:root[data-vm-ui-theme=light] .vm-profile-hero p,:root[data-vm-ui-theme=light] .vm-desktop-profile-stats span{color:#52677f!important}
+:root[data-vm-ui-theme=light] .vm-settings-group .vm-switch{color:#27394e!important}
+:root[data-vm-ui-theme=light] .vm-close,:root[data-vm-ui-theme=light] .panel-close-button{background:#e7eef7!important;color:#24384f!important;border-color:#c5d3e3!important}
+@media(min-width:769px){
+ #closeListButton{display:none!important}
+ #listPanel .panel-empty-state{grid-column:1/-1;min-height:45vh;display:flex!important;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:12px}
+ #listPanel .panel-empty-state strong{font-size:23px}
+ #listPanel .panel-empty-state span{font-size:14px}
+ #desktopListButton{overflow:visible!important;background-image:none!important;box-shadow:none!important;outline-offset:2px}
+ #desktopListButton:hover{border-color:#82b9ef!important;box-shadow:inset 0 0 0 1px #82b9ef!important}
+ #desktopListButton span[aria-hidden]{display:inline-flex;align-items:center;justify-content:center;background:none!important;border:0!important;box-shadow:none!important}
+ .desktop-result-tab{border:1px solid #466681!important;border-radius:999px!important;background:#21384e!important;padding:5px 11px!important;min-width:0!important;font-size:11px!important;color:#dceeff!important}
+ :root[data-vm-ui-theme=light] .topbar{background:#f7f9fd!important;color:#1d3046!important}
+ :root[data-vm-ui-theme=light] .topbar-brand,:root[data-vm-ui-theme=light] .topbar-brand strong{color:#1d3046!important}
+ :root[data-vm-ui-theme=light] .desktop-filter-wrap{background:#e9eff6!important;border-color:#cbd8e7!important}
+ :root[data-vm-ui-theme=light] .desktop-filter-button{color:#354e67!important}
+ :root[data-vm-ui-theme=light] .desktop-result-tab{background:#dbe7f4!important;color:#294461!important;border-color:#b5c9de!important}
+ :root[data-vm-ui-theme=light] #desktopListButton{color:#28415b!important;background:#e7eef8!important;border-color:#b7cce2!important}
+ :root[data-vm-ui-theme=light] #placesListView .list-place-card{background:#fff!important;border-color:#d2deec!important;color:#22364d!important}
+ :root[data-vm-ui-theme=light] #placesListView .list-place-copy{color:#263c55!important}
+ :root[data-vm-ui-theme=light] .desktop-events-panel{background:#f7f9fd!important;color:#1d3046!important}
+}
+
+/* VastiMap 1.6 – desktop layout fixes, 2026-11-15 */
+@media (min-width:769px) {
+  /* Single-color list/map control: no highlighted inner label. */
+  #desktopListButton span,
+  #desktopListButton .vm-list-button-text,
+  #desktopListButton span[aria-hidden] {
+    background:transparent!important;background-color:transparent!important;
+    border:0!important;box-shadow:none!important;border-radius:0!important;
+  }
+  /* Filter bar should hug its content instead of stretching across unused space. */
+  .desktop-filter-wrap {
+    flex:0 1 auto!important;width:max-content!important;max-width:100%!important;
+    justify-content:flex-start!important;padding-inline:9px!important;
+  }
+  .desktop-category-filters{flex:0 1 auto!important;width:auto!important}
+  .desktop-result-tab{margin-left:6px!important}
+  /* Events align to the top and right edges, like the place details panel. */
+  #desktopEventsPanel.desktop-events-panel {
+    position:fixed!important;top:78px!important;right:0!important;bottom:0!important;
+    left:auto!important;height:calc(100dvh - 78px)!important;
+    max-height:calc(100dvh - 78px)!important;margin:0!important;
+    border-radius:0!important;border-right:0!important;border-bottom:0!important;
+    width:min(430px,40vw)!important;box-sizing:border-box!important;
+  }
+  /* Earlier height/max-height rules were clipping the place detail panel. */
+  #detailsPanel.details-panel,
+  #detailsPanel.details-panel.open,
+  #detailsPanel.details-panel.open.expanded {
+    position:fixed!important;top:78px!important;right:0!important;bottom:0!important;
+    left:auto!important;height:calc(100dvh - 78px)!important;
+    max-height:none!important;min-height:0!important;
+    box-sizing:border-box!important;border-radius:0!important;
+    overflow-y:auto!important;overscroll-behavior:contain;
+  }
+  #detailsPanel .close-button{display:none!important}
+  #vmDesktopDetailClose{
+    display:grid;place-items:center;position:fixed;z-index:1200;
+    right:calc(min(570px,45vw) - 23px);top:calc(78px + (100dvh - 78px)/2 - 23px);
+    width:46px;height:46px;border-radius:50%;background:#1d334b;color:#fff;
+    border:2px solid #88b7e5;box-shadow:0 5px 22px #0008;
+    font-size:28px;line-height:1;cursor:pointer;
+    opacity:0;visibility:hidden;pointer-events:none;transition:background .16s,opacity .16s;
+  }
+  #vmDesktopDetailClose.vm-visible{opacity:1;visibility:visible;pointer-events:auto}
+  #vmDesktopDetailClose:hover{background:#315b81;border-color:#b4d8ff}
+}
+#vmDesktopDetailClose{display:none}
+@media (min-width:769px){#vmDesktopDetailClose.vm-visible{display:grid}}
+#vmNewsOverlay[hidden]{display:none!important;visibility:hidden!important;pointer-events:none!important}
+
+/* Desktop polish v1.6 – unified edge tabs and panel motion */
+@media (min-width:769px) {
+  .topbar{padding-left:28px!important;padding-right:28px!important}
+  .desktop-toolbar{gap:10px!important}
+  #desktopEventsButton.events-highlight{height:40px!important;border-radius:11px!important;padding-inline:12px!important;border:1px solid #3e6589!important;background:#192d42!important;color:#e7f1fc!important;box-shadow:none!important}
+  #desktopEventsButton.events-highlight:hover{background:#254461!important;border-color:#7eacd9!important}
+  #desktopEventsButton .toolbar-count{border-radius:999px!important}
+  /* Dock moves as a unit, including the close tab. */
+  #vmDetailsDock{position:fixed;z-index:700;top:78px;right:0;bottom:0;width:min(570px,45vw);overflow:visible;transform:translateX(calc(100% + 32px));transition:transform .28s cubic-bezier(.22,1,.36,1);pointer-events:none}
+  #vmDetailsDock.open{transform:translateX(0);pointer-events:auto}
+  #vmDetailsDock #detailsPanel,#vmDetailsDock #detailsPanel.open,#vmDetailsDock #detailsPanel.open.expanded{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-height:none!important;transform:none!important;overflow-y:auto!important}
+  #vmDetailsDock #vmDesktopDetailClose{position:absolute!important;right:auto!important;left:-24px!important;top:25%!important;transform:translateY(-50%);display:grid!important;width:48px!important;height:48px!important;z-index:15!important;transition:background .15s, border-color .15s!important}
+  #vmDetailsDock #vmDesktopDetailClose.vm-visible{opacity:1!important;visibility:visible!important;pointer-events:auto!important}
+  .vm-edge-close{position:absolute;left:0;top:25%;transform:translate(-50%,-50%);width:48px;height:48px;display:grid;place-items:center;border-radius:50%;background:#1a3046;border:2px solid #7aaddb;color:#f1f7ff;font-size:26px;line-height:1;cursor:pointer;box-shadow:0 6px 22px #0008;z-index:20}
+  .vm-edge-close:hover,#vmDetailsDock #vmDesktopDetailClose:hover{background:#305677;border-color:#b9dcff}
+  #desktopEventsPanel.desktop-events-panel{overflow:visible!important;transform:translateX(calc(100% + 32px))!important;transition:transform .28s cubic-bezier(.22,1,.36,1),opacity .18s!important;display:flex;flex-direction:column}
+  #desktopEventsPanel.desktop-events-panel.open{transform:translateX(0)!important}
+  #desktopEventsPanel .events-list{overflow-y:auto!important;min-height:0;flex:1}
+  #desktopEventsPanel #desktopEventsClose{display:none!important}
+}
+@media (max-width:768px){
+ #vmDetailsDock{display:contents}
+ #vmDesktopEventsEdgeClose{display:none}
+}
+
+/* Patch 6: desktop edge tab above the detail panel, without a clipping stacking context */
+@media (min-width:769px){
+ #vmDetailsDock{isolation:isolate!important;overflow:visible!important}
+ #vmDetailsDock #detailsPanel{z-index:1!important}
+ #vmDetailsDock #vmDesktopDetailClose{z-index:999!important;isolation:isolate!important;box-shadow:0 7px 22px #000a!important;background:#1b344e!important;border:2px solid #9bc9f7!important}
+}
+/* Touch tablets and intermediate widths: never squeeze six text filters into a narrow row. */
+
+
+.vm-profile-subpage{min-height:250px}
+.vm-profile-subpage h2{margin:18px 0!important}
+.vm-profile-subpage .vm-profile-list{max-height:none!important;overflow:visible!important}
+.vm-profile-subpage .vm-feedback-choice{display:flex;flex-direction:column;align-items:stretch;gap:9px}
+.vm-profile-subpage .vm-feedback-choice .vm-action{display:block;width:100%;margin:0;text-align:left;box-sizing:border-box}
+
+/* Patch 7: tablet-width desktop toolbar and unified accessible light palette. */
+
+
+
+
+:root[data-vm-ui-theme="light"]{
+ --vm-ui-card:#e4eaf2;--vm-ui-border:#b8c8d9;
+ --vm-light-bg:#e9eef5;--vm-light-surface:#e0e8f1;--vm-light-text:#192c43;--vm-light-muted:#4b627c;--vm-light-line:#bdcddd;
+ color-scheme:light;
+}
+:root[data-vm-ui-theme="light"] .topbar,
+:root[data-vm-ui-theme="light"] #listPanel,
+:root[data-vm-ui-theme="light"] #detailsPanel,
+:root[data-vm-ui-theme="light"] .desktop-events-panel,
+:root[data-vm-ui-theme="light"] .vm-dialog,
+:root[data-vm-ui-theme="light"] .vm-profile-subpage{background:var(--vm-light-bg)!important;color:var(--vm-light-text)!important;border-color:var(--vm-light-line)!important}
+:root[data-vm-ui-theme="light"] .topbar h1,
+:root[data-vm-ui-theme="light"] .topbar-brand h1,
+:root[data-vm-ui-theme="light"] .topbar-title-row,
+:root[data-vm-ui-theme="light"] #listPanel h2,
+:root[data-vm-ui-theme="light"] #detailsPanel h2,
+:root[data-vm-ui-theme="light"] .desktop-events-panel h2,
+:root[data-vm-ui-theme="light"] .vm-dialog h2,
+:root[data-vm-ui-theme="light"] .vm-dialog h3,
+:root[data-vm-ui-theme="light"] .vm-dialog h4,
+:root[data-vm-ui-theme="light"] #detailsPanel h3,
+:root[data-vm-ui-theme="light"] .list-panel-header h2,
+:root[data-vm-ui-theme="light"] .panel-title,
+:root[data-vm-ui-theme="light"] .event-card h4{color:var(--vm-light-text)!important;text-shadow:none!important}
+:root[data-vm-ui-theme="light"] .desktop-search-dock .search-input-wrap,
+:root[data-vm-ui-theme="light"] .search-input-wrap,
+:root[data-vm-ui-theme="light"] .desktop-filter-wrap,
+:root[data-vm-ui-theme="light"] #desktopListButton,
+:root[data-vm-ui-theme="light"] .desktop-result-tab,
+:root[data-vm-ui-theme="light"] .vm-news-button,
+:root[data-vm-ui-theme="light"] .vm-desktop-profile,
+:root[data-vm-ui-theme="light"] #desktopEventsButton,
+:root[data-vm-ui-theme="light"] .map-search-results,
+:root[data-vm-ui-theme="light"] .vm-settings-group,
+:root[data-vm-ui-theme="light"] .vm-profile-menu,
+:root[data-vm-ui-theme="light"] .vm-desktop-profile-stats>div,
+:root[data-vm-ui-theme="light"] #placesListView .list-place-card,
+:root[data-vm-ui-theme="light"] #detailsPanel .vm-desktop-info-card,
+:root[data-vm-ui-theme="light"] .desktop-events-panel .event-card,
+:root[data-vm-ui-theme="light"] .vm-profile-list>div{background:var(--vm-light-surface)!important;color:var(--vm-light-text)!important;border-color:var(--vm-light-line)!important;box-shadow:none!important}
+:root[data-vm-ui-theme="light"] .search-input-wrap input,
+:root[data-vm-ui-theme="light"] .desktop-search-dock input,
+:root[data-vm-ui-theme="light"] .desktop-filter-button,
+:root[data-vm-ui-theme="light"] .vm-profile-menu button,
+:root[data-vm-ui-theme="light"] .vm-settings-group label,
+:root[data-vm-ui-theme="light"] #placesListView .list-place-copy,
+:root[data-vm-ui-theme="light"] #placesListView .list-place-copy strong,
+:root[data-vm-ui-theme="light"] #detailsPanel .info-block,
+:root[data-vm-ui-theme="light"] #detailsPanel .vm-info-expand,
+:root[data-vm-ui-theme="light"] #detailsPanel .vm-desktop-info-card strong,
+:root[data-vm-ui-theme="light"] .desktop-events-panel .event-card,
+:root[data-vm-ui-theme="light"] .desktop-events-panel .event-card h4,
+:root[data-vm-ui-theme="light"] .map-search-results *,
+:root[data-vm-ui-theme="light"] .vm-dialog .vm-profile-section{color:var(--vm-light-text)!important}
+:root[data-vm-ui-theme="light"] .search-input-wrap input::placeholder{color:#5c7188!important;opacity:1}
+:root[data-vm-ui-theme="light"] .list-place-copy>span,
+:root[data-vm-ui-theme="light"] .panel-eyebrow,
+:root[data-vm-ui-theme="light"] .list-panel-header p,
+:root[data-vm-ui-theme="light"] #detailsPanel .info-block p,
+:root[data-vm-ui-theme="light"] .desktop-events-panel .event-card-meta,
+:root[data-vm-ui-theme="light"] .desktop-events-panel .event-rule-text,
+:root[data-vm-ui-theme="light"] .vm-profile-hero p,
+:root[data-vm-ui-theme="light"] .vm-desktop-profile-stats span{color:var(--vm-light-muted)!important}
+:root[data-vm-ui-theme="light"] .map-search-results{border:1px solid var(--vm-light-line)!important}
+:root[data-vm-ui-theme="light"] .map-search-results>*,
+:root[data-vm-ui-theme="light"] .vm-profile-menu button{border-color:var(--vm-light-line)!important}
+:root[data-vm-ui-theme="light"] .map-search-results>*:hover,
+:root[data-vm-ui-theme="light"] .vm-profile-menu button:not(:disabled):hover,
+:root[data-vm-ui-theme="light"] .vm-settings-back:hover,
+:root[data-vm-ui-theme="light"] #placesListView .list-place-card:hover,
+:root[data-vm-ui-theme="light"] .desktop-filter-button:hover{background:#cddbe9!important;color:#142940!important}
+:root[data-vm-ui-theme="light"] .vm-settings-back,
+:root[data-vm-ui-theme="light"] .vm-close,
+:root[data-vm-ui-theme="light"] .panel-close-button,
+:root[data-vm-ui-theme="light"] .vm-edge-close,
+:root[data-vm-ui-theme="light"] .vm-news-button{background:#d6e1ed!important;color:#203750!important;border:1px solid #a9bfd5!important}
+:root[data-vm-ui-theme="light"] .vm-settings-back:hover,
+:root[data-vm-ui-theme="light"] .vm-close:hover,
+:root[data-vm-ui-theme="light"] .panel-close-button:hover,
+:root[data-vm-ui-theme="light"] .vm-edge-close:hover,
+:root[data-vm-ui-theme="light"] .vm-news-button:hover{background:#c2d4e7!important;color:#122940!important}
+:root[data-vm-ui-theme="light"] #desktopListButton:hover,
+:root[data-vm-ui-theme="light"] #desktopEventsButton:hover{background:#cbdbea!important;color:#18324d!important;border-color:#8caac8!important}
+:root[data-vm-ui-theme="light"] #desktopEventsButton .toolbar-count{background:#285c9c!important;color:#fff!important}
+:root[data-vm-ui-theme="light"] .vm-dialog input:not([type="checkbox"]),
+:root[data-vm-ui-theme="light"] .vm-dialog textarea,
+:root[data-vm-ui-theme="light"] .vm-dialog select{background:#f0f4f9!important;color:#1a2d43!important;border-color:#a9bfd5!important}
+:root[data-vm-ui-theme="light"] #listPanel,
+:root[data-vm-ui-theme="light"] #detailsPanel,
+:root[data-vm-ui-theme="light"] .desktop-events-panel,
+:root[data-vm-ui-theme="light"] .vm-dialog,
+:root[data-vm-ui-theme="light"] .map-search-results,
+:root[data-vm-ui-theme="light"] #placesListView{scrollbar-width:thin;scrollbar-color:#7b99b7 #e0e8f1}
+:root[data-vm-ui-theme="light"] ::-webkit-scrollbar-track{background:#e0e8f1}
+:root[data-vm-ui-theme="light"] ::-webkit-scrollbar-thumb{background:#8ca7c3;border-color:#e0e8f1}
+
+/* VastiMap 1.6 patch 8: tablet desktop layout and light-theme parity */
+/* Tablet is deliberately a compact DESKTOP toolbar, not the mobile UI. */
+
+
+/* All light components share the same radii, surfaces and contrast. */
+:root[data-vm-ui-theme="light"]{--vm-light-bg:#e9eef5;--vm-light-surface:#f0f4f9;--vm-light-text:#172b42;--vm-light-muted:#3d5672;--vm-light-line:#b7c8dc;--vm-light-link:#165aab;--vm-ui-card:#e0e9f3}
+:root[data-vm-ui-theme="light"] .onboarding-dialog,
+:root[data-vm-ui-theme="light"] .onboarding-footer,
+:root[data-vm-ui-theme="light"] .onboarding-content{background:#e9eef5!important;color:#172b42!important;border-color:#b7c8dc!important}
+:root[data-vm-ui-theme="light"] .onboarding-dialog{border-radius:20px!important}
+:root[data-vm-ui-theme="light"] .onboarding-page h2,
+:root[data-vm-ui-theme="light"] .onboarding-feature strong,
+:root[data-vm-ui-theme="light"] .onboarding-page>p,
+:root[data-vm-ui-theme="light"] .onboarding-feature p,
+:root[data-vm-ui-theme="light"] .onboarding-note{color:#172b42!important}
+:root[data-vm-ui-theme="light"] .onboarding-feature,
+:root[data-vm-ui-theme="light"] .onboarding-note{background:#dfe8f2!important;border:1px solid #b7c8dc!important;border-radius:14px!important}
+:root[data-vm-ui-theme="light"] .onboarding-secondary-button,
+:root[data-vm-ui-theme="light"] .onboarding-close,
+:root[data-vm-ui-theme="light"] .vm-close,
+:root[data-vm-ui-theme="light"] .panel-close-button,
+:root[data-vm-ui-theme="light"] .vm-edge-close,
+:root[data-vm-ui-theme="light"] #vmDesktopDetailClose,
+:root[data-vm-ui-theme="light"] #vmDesktopEventsEdgeClose{background:#d6e3f0!important;color:#1b3957!important;border:1px solid #8faeca!important;border-radius:50%!important}
+:root[data-vm-ui-theme="light"] .onboarding-secondary-button:hover,
+:root[data-vm-ui-theme="light"] .vm-close:hover,
+:root[data-vm-ui-theme="light"] .vm-edge-close:hover,
+:root[data-vm-ui-theme="light"] #vmDesktopDetailClose:hover{background:#b9d0e6!important;color:#10263d!important}
+:root[data-vm-ui-theme="light"] #detailsPanel .vm-mark-actions button,
+:root[data-vm-ui-theme="light"] .vm-mark-actions button,
+:root[data-vm-ui-theme="light"] .vm-feedback-choice .vm-action,
+:root[data-vm-ui-theme="light"] .vm-dialog .vm-action,
+:root[data-vm-ui-theme="light"] .vm-dialog .vm-secondary{background:#dce8f4!important;color:#18334e!important;border:1px solid #9eb9d4!important;border-radius:11px!important}
+:root[data-vm-ui-theme="light"] #detailsPanel .vm-mark-actions button:hover,
+:root[data-vm-ui-theme="light"] .vm-feedback-choice .vm-action:hover,
+:root[data-vm-ui-theme="light"] .vm-dialog .vm-action:hover,
+:root[data-vm-ui-theme="light"] .vm-dialog .vm-secondary:hover{background:#c4d9ed!important;color:#102940!important}
+:root[data-vm-ui-theme="light"] .vm-mark-actions button.vm-active{background:#c9e8dc!important;color:#12503c!important;border-color:#6bb39a!important}
+:root[data-vm-ui-theme="light"] .season-heading,
+:root[data-vm-ui-theme="light"] .season-validity,
+:root[data-vm-ui-theme="light"] .season-hours,
+:root[data-vm-ui-theme="light"] #detailsPanel .category-badge,
+:root[data-vm-ui-theme="light"] #detailsPanel .panel-category,
+:root[data-vm-ui-theme="light"] #detailsPanel .info-block strong,
+:root[data-vm-ui-theme="light"] #detailsPanel .info-block span{color:#254b72!important}
+:root[data-vm-ui-theme="light"] #detailsPanel a,
+:root[data-vm-ui-theme="light"] .desktop-events-panel a,
+:root[data-vm-ui-theme="light"] .vm-dialog a{color:#165aab!important}
+:root[data-vm-ui-theme="light"] .free-entry-card{background:#d5e9df!important;border-color:#90c8b0!important;border-radius:12px!important}
+:root[data-vm-ui-theme="light"] .free-entry-card.scheduled{background:#d7e6f8!important;border-color:#99bde6!important}
+:root[data-vm-ui-theme="light"] .free-entry-card strong,
+:root[data-vm-ui-theme="light"] .free-entry-card span,
+:root[data-vm-ui-theme="light"] .free-entry-card .free-entry-date{color:#1a3b50!important;opacity:1!important}
+:root[data-vm-ui-theme="light"] .free-entry-icon{background:#b5dacb!important;color:#18563f!important}
+:root[data-vm-ui-theme="light"] .free-entry-card.scheduled .free-entry-icon{background:#bcd5f2!important;color:#174e88!important}
+:root[data-vm-ui-theme="light"] .vm-visitor-bar,
+:root[data-vm-ui-theme="light"] .vm-profile-list .vm-profile-place-row,
+:root[data-vm-ui-theme="light"] .vm-profile-list>div{background:#dce7f2!important;color:#1b344f!important;border:1px solid #b7c8dc!important;border-radius:11px!important}
+:root[data-vm-ui-theme="light"] .vm-profile-list .vm-profile-place-row *,
+:root[data-vm-ui-theme="light"] .vm-visitor-bar *{color:#1b344f!important}
+:root[data-vm-ui-theme="light"] .vm-profile-list button:hover,
+:root[data-vm-ui-theme="light"] .vm-profile-menu button:hover{background:#c6d9ec!important;color:#132d46!important}
+:root[data-vm-ui-theme="light"] .desktop-events-panel .event-card,
+:root[data-vm-ui-theme="light"] .event-card{background:#e0eaf4!important;border:1px solid #b5c9df!important;border-radius:13px!important;color:#1b344f!important}
+:root[data-vm-ui-theme="light"] .event-card .event-date-badge,
+:root[data-vm-ui-theme="light"] .event-card.monthly .event-date-badge{background:#d1dff3!important;border-color:#9bb4d7!important;color:#263c70!important}
+:root[data-vm-ui-theme="light"] .event-card .event-date-badge *,
+:root[data-vm-ui-theme="light"] .event-card .event-rule-text,
+:root[data-vm-ui-theme="light"] .event-card .event-card-meta,
+:root[data-vm-ui-theme="light"] .event-card p,
+:root[data-vm-ui-theme="light"] .event-card span{color:#314b67!important;opacity:1!important}
+:root[data-vm-ui-theme="light"] .event-card h4,
+:root[data-vm-ui-theme="light"] .desktop-events-panel h2{color:#172b42!important}
+:root[data-vm-ui-theme="light"] .event-card a{color:#165aab!important}
+:root[data-vm-ui-theme="light"] .onboarding-switch button{background:#d8e4f1!important;color:#1a3551!important;border:1px solid #a9c0d9!important}
+:root[data-vm-ui-theme="light"] .vm-settings-back{border-radius:10px!important;padding:8px 12px!important;background:#dbe7f3!important;color:#19334d!important}
+:root[data-vm-ui-theme="light"] .vm-settings-back:hover{background:#bed4e9!important;color:#102a43!important}
+
+/* VastiMap 1.6 patch 9: precise light-theme and map contrast adjustments */
+:root[data-vm-ui-theme="light"] .desktop-search-dock .search-input-wrap,
+:root[data-vm-ui-theme="light"] .search-input-wrap,
+:root[data-vm-ui-theme="light"] .desktop-search-dock input,
+:root[data-vm-ui-theme="light"] .search-input-wrap input {border-radius:12px!important}
+:root[data-vm-ui-theme="light"] #desktopListButton {border:1px solid #a8c2df!important;border-radius:11px!important;box-shadow:none!important;outline:none!important;background:#e4edf8!important;overflow:hidden!important;background-image:none!important}
+:root[data-vm-ui-theme="light"] #desktopListButton::before,
+:root[data-vm-ui-theme="light"] #desktopListButton::after {box-shadow:none!important;background:none!important;border:0!important}
+:root[data-vm-ui-theme="light"] #desktopListButton:hover {background:#d5e5f5!important;border-color:#7ea6cd!important;box-shadow:none!important}
+:root[data-vm-ui-theme="light"] .event-group-count,
+:root[data-vm-ui-theme="light"] .event-group.monthly .event-group-count,
+:root[data-vm-ui-theme="light"] .event-group.annual .event-group-count,
+:root[data-vm-ui-theme="light"] .event-group.upcoming .event-group-count {color:#202b51!important;background:#c4c7f4!important;border:1px solid #9fa9db!important;opacity:1!important}
+:root[data-vm-ui-theme="light"] .event-details-summary .event-tag,
+:root[data-vm-ui-theme="light"] .event-details-summary .category-tag,
+:root[data-vm-ui-theme="light"] .event-details-summary .event-detail-occurrence,
+:root[data-vm-ui-theme="light"] .event-details-summary .event-detail-date {color:#234a79!important;background:#d2e3f6!important;border-color:#a7c5e7!important;opacity:1!important}
+:root[data-vm-ui-theme="light"] #vmDetailsDock #vmDesktopDetailClose,
+:root[data-vm-ui-theme="light"] #vmDesktopEventsEdgeClose,
+:root[data-vm-ui-theme="light"] .vm-edge-close {background:#e4edf7!important;color:#203b57!important;border:2px solid #8aaaca!important;box-shadow:0 5px 16px rgba(26,57,86,.22)!important}
+:root[data-vm-ui-theme="light"] #vmDetailsDock #vmDesktopDetailClose:hover,
+:root[data-vm-ui-theme="light"] #vmDesktopEventsEdgeClose:hover,
+:root[data-vm-ui-theme="light"] .vm-edge-close:hover {background:#cadff0!important;color:#112a44!important}
+:root[data-vm-ui-theme="light"] .vm-mark-checkbox:not(:has(input:checked)),
+:root[data-vm-ui-theme="light"] #detailsPanel .vm-mark-checkbox:not(:has(input:checked)) {background:#e1ebf6!important;color:#1d3957!important;border-color:#9ebbd9!important}
+:root[data-vm-ui-theme="light"] .vm-mark-checkbox:not(:has(input:checked)):hover {background:#d3e3f3!important}
+:root[data-vm-ui-theme="light"] #detailsPanel .category-tag,
+:root[data-vm-ui-theme="light"] #detailsPanel .category-badge,
+:root[data-vm-ui-theme="light"] #detailsPanel .panel-category {background:#d7e7f9!important;color:#214f83!important;border-color:#9bbde4!important;opacity:1!important}
+:root[data-vm-ui-theme="light"] .vm-profile-place-row:hover,
+:root[data-vm-ui-theme="light"] .vm-profile-list .vm-profile-place-row:hover,
+:root[data-vm-ui-theme="light"] .vm-profile-list .vm-profile-place-link:hover {background:#dce7f2!important;box-shadow:none!important}
+:root[data-vm-ui-theme="light"] .vm-profile-list .vm-profile-place-link:hover {text-decoration:underline!important;text-underline-offset:3px!important}
+:root[data-vm-ui-theme="light"] .vm-profile-list .vm-profile-place-remove:hover {background:transparent!important;color:#244c75!important}
+/* The map controls contrast with the basemap, independently of the UI theme. */
+body.vm-dark-basemap .leaflet-control-zoom {border:1px solid rgba(207,222,238,.85)!important;box-shadow:0 5px 20px rgba(0,0,0,.35)!important}
+body.vm-dark-basemap .leaflet-control-zoom a {background:#e8eff7!important;color:#17324d!important}
+body.vm-dark-basemap .leaflet-control-zoom a:hover {background:#cbdced!important;color:#10263d!important}
+body.vm-dark-basemap .help-button {background:#e8eff7!important;color:#17324d!important;border:1px solid #b0c7de!important;box-shadow:0 6px 20px rgba(0,0,0,.3)!important}
+body.vm-dark-basemap .help-button:hover {background:#cbdced!important;color:#10263d!important}
+body:not(.vm-dark-basemap) .leaflet-control-zoom a {background:rgba(10,17,27,.9)!important;color:#eef5fc!important}
+body:not(.vm-dark-basemap) .help-button {background:rgba(10,17,27,.9)!important;color:#bfdbfe!important;border-color:rgba(255,255,255,.14)!important}
+
+/* Patch 10: profile and tablet parity */
+:root[data-vm-ui-theme="light"] .vm-profile-list .vm-profile-place-row,
+:root[data-vm-ui-theme="light"] .vm-profile-list .vm-profile-place-row:hover {
+ overflow:hidden!important; background:#dce7f2!important; border-radius:11px!important;
+}
+:root[data-vm-ui-theme="light"] .vm-profile-list .vm-profile-place-link,
+:root[data-vm-ui-theme="light"] .vm-profile-list .vm-profile-place-link:hover,
+:root[data-vm-ui-theme="light"] .vm-profile-list .vm-profile-place-link:focus {
+ background:transparent!important; box-shadow:none!important; border-radius:0!important;
+}
+:root[data-vm-ui-theme="light"] .vm-profile-list .vm-profile-place-link:hover {text-decoration:underline!important}
+:root[data-vm-ui-theme="light"] .vm-settings-back,
+:root[data-vm-ui-theme="light"] .vm-settings-back:hover {border:0!important;box-shadow:none!important;background:transparent!important;padding:5px 0 16px!important;color:#24547f!important;border-radius:0!important}
+:root[data-vm-ui-theme="light"] .vm-settings-back:hover {color:#143b61!important;text-decoration:underline!important}
+:root[data-vm-ui-theme="light"] .vm-visitor-bar,
+:root[data-vm-ui-theme="light"] .vm-visitor-bar:hover {border:0!important;background:transparent!important;box-shadow:none!important;border-radius:0!important}
+:root[data-vm-ui-theme="light"] .vm-visitor-bar .vm-avatar,
+:root[data-vm-ui-theme="light"] .vm-visitor-avatars .vm-avatar {background:#345d80!important;color:#fff!important;border:1px solid #7896b7!important;box-shadow:none!important}
+:root[data-vm-ui-theme="light"] .vm-visitor-bar .vm-visitor-chevron {color:#365b7f!important}
+:root[data-vm-ui-theme="light"] .vm-visitor-names {color:#203c58!important;opacity:1!important}
+/* Tablet = desktop view, only filter captions are hidden. */
+
+
+
+/* Patch 11 — tablet dock visibility and compact toolbar.
+   A coarse pointer must NOT turn the desktop detail dock into display:contents. */
+@media (min-width:769px) {
+  #vmDetailsDock {
+    display:block!important;
+    visibility:hidden;
+    pointer-events:none!important;
+  }
+  #vmDetailsDock.open {
+    visibility:visible;
+    pointer-events:auto!important;
+  }
+  #vmDetailsDock:not(.open) #detailsPanel {
+    visibility:hidden!important;
+    pointer-events:none!important;
+  }
+  #vmDetailsDock.open #detailsPanel {
+    visibility:visible!important;
+  }
+}
+
+
+/* Patch 12: consistent tablet desktop mode, compact toolbar. */
+
+
+/* ============================================================
+   VASTIMAP 1.6 — CONSOLIDATED DESKTOP / TABLET LAYOUT
+   Global topbar is a sibling of .map-section, not its child.
+   Keep tablet overrides here; do not add another tablet patch.
+   ============================================================ */
+@media (min-width:769px) {
+  :root { --vm-desktop-header-height:72px; }
+  .app > .topbar {
+    position:fixed!important;inset:0 0 auto 0!important;
+    width:100%!important;max-width:none!important;
+    height:var(--vm-desktop-header-height)!important;
+    min-height:var(--vm-desktop-header-height)!important;
+    padding:8px clamp(12px,1.3vw,24px)!important;
+    border-radius:0!important;border-top:0!important;border-left:0!important;border-right:0!important;
+    display:flex!important;align-items:center!important;flex-wrap:nowrap!important;
+    gap:clamp(8px,1vw,16px)!important;
+    z-index:3000!important;box-sizing:border-box!important;
+    overflow:visible!important;
+  }
+  .app > .topbar .topbar-brand {flex:0 0 auto!important;min-width:0!important;max-width:none!important;}
+  .app > .topbar .topbar-brand p {display:none!important;}
+  .app > .topbar .desktop-toolbar {display:flex!important;flex:1 1 auto!important;min-width:0!important;max-width:none!important;align-items:center!important;justify-content:flex-start!important;gap:clamp(5px,.65vw,12px)!important;flex-wrap:nowrap!important;}
+  .app > .topbar .desktop-search-dock {flex:1 1 210px!important;width:auto!important;min-width:120px!important;max-width:320px!important;}
+  .app > .topbar .vm-desktop-profile {margin-left:auto!important;}
+  .app > .topbar .desktop-search-dock .search-input-wrap {width:100%!important;min-width:0!important;}
+  .app > .topbar #desktopListButton {position:static!important;transform:none!important;flex:0 0 auto!important;min-width:70px!important;width:auto!important;height:38px!important;padding:0 10px!important;}
+  .app > .topbar .desktop-filter-wrap {display:flex!important;flex:0 0 auto!important;width:auto!important;max-width:none!important;min-width:0!important;align-items:center!important;gap:4px!important;padding:4px 8px!important;overflow:visible!important;}
+  .app > .topbar .desktop-category-filters {display:flex!important;flex:0 0 auto!important;width:auto!important;gap:3px!important;align-items:center!important;}
+  .app > .topbar .desktop-result-tab {position:static!important;transform:none!important;flex:0 0 auto!important;white-space:nowrap!important;margin:0!important;}
+  .app > .topbar .vm-desktop-profile,.app > .topbar .vm-news-button {flex:0 0 37px!important;min-width:37px!important;width:37px!important;height:37px!important;}
+  .app > .topbar #desktopEventsButton {flex:0 0 auto!important;white-space:nowrap!important;min-width:0!important;}
+  #listPanel {top:var(--vm-desktop-header-height)!important;}
+  #vmDetailsDock {top:var(--vm-desktop-header-height)!important;}
+  #desktopEventsPanel.desktop-events-panel {top:var(--vm-desktop-header-height)!important;height:calc(100dvh - var(--vm-desktop-header-height))!important;max-height:calc(100dvh - var(--vm-desktop-header-height))!important;}
+  #vmDetailsDock #detailsPanel {top:0!important;}
+  .leaflet-top.leaflet-left {top:calc(var(--vm-desktop-header-height) + 20px)!important;}
+  .vm-desktop-info-pair,.vm-desktop-profile-stats,.vm-desktop-bucket-preview {display:grid!important;}
+}
+/* Tablet and narrower desktop: icon-only filters; same layout and functionality. */
+@media (min-width:769px) and (max-width:1600px) {
+  .app > .topbar {gap:8px!important;padding-inline:12px!important;}
+  .app > .topbar .desktop-toolbar {gap:6px!important;}
+  .app > .topbar .desktop-search-dock {flex:1 1 160px!important;min-width:110px!important;max-width:260px!important;}
+  .app > .topbar .desktop-filter-wrap {padding:3px 5px!important;gap:2px!important;}
+  .app > .topbar .desktop-category-filters {gap:1px!important;}
+  .app > .topbar .desktop-category-filters .desktop-filter-button {display:inline-flex!important;flex:0 0 27px!important;width:27px!important;min-width:27px!important;max-width:27px!important;height:32px!important;padding:0!important;align-items:center!important;justify-content:center!important;overflow:hidden!important;font-size:0!important;}
+  .app > .topbar .desktop-category-filters .vm-filter-label {display:none!important;}
+  .app > .topbar .desktop-category-filters [aria-hidden=true] {font-size:15px!important;line-height:1!important;}
+  .app > .topbar .desktop-free-filter {flex:0 0 27px!important;min-width:27px!important;width:27px!important;height:32px!important;padding:0!important;}
+  .app > .topbar .desktop-result-tab {font-size:10px!important;padding:4px 6px!important;}
+}
+@media (min-width:769px) and (max-width:1080px) {
+  .app > .topbar {gap:5px!important;padding-inline:8px!important;}
+  .app > .topbar .topbar-brand h1 {font-size:14px!important;}
+  .app > .topbar .desktop-toolbar {gap:4px!important;}
+  .app > .topbar .desktop-search-dock {flex:1 1 125px!important;min-width:85px!important;max-width:175px!important;}
+  .app > .topbar .desktop-category-filters .desktop-filter-button {flex-basis:23px!important;min-width:23px!important;width:23px!important;max-width:23px!important;}
+  .app > .topbar .desktop-free-filter {flex-basis:23px!important;min-width:23px!important;width:23px!important;}
+  .app > .topbar #desktopEventsButton {font-size:0!important;gap:5px!important;min-width:57px!important;padding-inline:6px!important;}
+  .app > .topbar #desktopEventsButton .toolbar-icon {font-size:16px!important;}
+  .app > .topbar #desktopEventsButton .toolbar-count {font-size:11px!important;}
+}
+
+/* Refaktor 15 – the list/map label must not inherit the 22px icon span width. */
+@media (min-width:769px) {
+  .app > .topbar #desktopListButton {
+    display:inline-flex!important;align-items:center!important;justify-content:center!important;
+    gap:8px!important;min-width:106px!important;width:106px!important;
+    flex:0 0 106px!important;padding:0 12px!important;box-sizing:border-box!important;
+    white-space:nowrap!important;overflow:hidden!important;
+  }
+  .app > .topbar #desktopListButton span[aria-hidden] {
+    display:inline-flex!important;flex:0 0 18px!important;
+    width:18px!important;min-width:18px!important;height:auto!important;
+    align-items:center!important;justify-content:center!important;
+  }
+  .app > .topbar #desktopListButton .vm-list-button-text {
+    display:inline-block!important;flex:0 0 auto!important;
+    width:auto!important;min-width:max-content!important;height:auto!important;
+    overflow:visible!important;white-space:nowrap!important;
+    line-height:1.2!important;
+  }
+}

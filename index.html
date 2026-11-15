@@ -21,7 +21,7 @@
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
-		<link rel="stylesheet" href="style.css">
+		<link rel="stylesheet" href="style.css?v=refactor13">
 	</head>
 	<body>
 		<main class="app">
@@ -61,8 +61,7 @@
 				</div>
 			</header>
 
-			<!-- Map -->
-			<section class="map-section">
+			<!-- Desktop / tablet global navigation (outside map stacking context) -->
 				<header class="topbar">
 					<div class="topbar-brand">
 						<div class="topbar-title-row">
@@ -84,6 +83,7 @@
 							<div id="desktopPlaceSearchResults" class="map-search-results desktop-search-results hidden"></div>
 						</div>
 
+						<button id="desktopListButton" class="desktop-list-tab" type="button" aria-controls="listPanel" aria-expanded="false"><span aria-hidden="true">☷</span><span class="vm-list-button-text">Lista</span></button>
 						<div class="desktop-filter-wrap">
 							<div id="desktopCategoryFilters" class="desktop-category-filters"></div>
 							<button class="desktop-filter-button desktop-free-filter" type="button" data-free-filter="true" aria-label="Ingyenes" title="Ingyenes">
@@ -95,19 +95,18 @@
 						</div>
 
 						<button class="vm-profile-trigger vm-desktop-profile" type="button" aria-label="Profil" title="Profil"><span class="vm-profile-symbol"><svg class="vm-user-icon" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20v-1.5a6.5 6.5 0 0 1 13 0V20"/></svg></span></button>
-						<div class="vm-theme-control"><button type="button" class="vm-theme-trigger" aria-label="Váltás sötét térképre" title="Váltás sötét térképre"><span class="vm-theme-trigger-icon" aria-hidden="true">☀️ / 🌙</span></button></div>
+						<button id="desktopNewsButton" class="toolbar-button vm-news-button" type="button" title="Újdonságok" aria-label="Újdonságok"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></button>
 						<button id="desktopEventsButton" class="toolbar-button events-highlight" type="button" aria-controls="desktopEventsPanel" aria-expanded="false">
 							<span class="toolbar-icon">◫</span>
 							Események
 							<span id="desktopEventCount" class="toolbar-count">0</span>
 						</button>
 					</div>
-
-					<button id="desktopListButton" class="desktop-list-tab" type="button" aria-controls="listPanel" aria-expanded="false">
-						<span aria-hidden="true">☷</span>
-						Lista
-					</button>
 				</header>
+
+
+			<!-- Map -->
+			<section class="map-section">
 
 				<!-- Filters -->
 				<aside id="filterPanel" class="filter-panel" aria-label="Keresés és szűrők">
@@ -204,6 +203,7 @@
 
 				<!-- Events -->
 				<aside id="desktopEventsPanel" class="desktop-events-panel" aria-hidden="true">
+					<button id="vmDesktopEventsEdgeClose" type="button" class="vm-edge-close" aria-label="Események bezárása">×</button>
 					<div class="panel-section-heading">
 						<div>
 							<span class="panel-eyebrow">Aktuális</span>
@@ -230,6 +230,7 @@
 
 			<!-- Details -->
 			<div id="detailsBackdrop" class="details-backdrop" aria-hidden="true"></div>
+			<div id="vmDetailsDock" class="vm-details-dock">
 			<aside id="detailsPanel" class="details-panel" aria-hidden="true">
 				<div id="detailsDragZone" class="details-drag-zone" aria-label="Adatlap méretének módosítása">
 					<span class="details-drag-handle"></span>
@@ -241,6 +242,9 @@
 					<span id="detailsDragHintText">Húzd fel a részletekhez</span>
 				</div>
 			</aside>
+
+			<button id="vmDesktopDetailClose" type="button" aria-label="Adatlap bezárása" title="Adatlap bezárása">×</button>
+			</div>
 
 			<!-- Lightbox -->
 			<div id="imageLightbox" class="image-lightbox" aria-hidden="true">
@@ -257,7 +261,7 @@
 			<section class="onboarding-dialog" role="dialog" aria-modal="true" aria-label="Vasti Map bemutató">
 				<button id="onboardingClose" class="onboarding-close" type="button" aria-label="Bemutató bezárása">×</button>
 
-				<div class="onboarding-switch"><button id="showHelpButton" type="button">Súgó</button><button id="showChangelogButton" type="button">Mi változott?</button></div>
+				
 <div id="onboardingContent" class="onboarding-content">
 					<article class="onboarding-page active" data-onboarding-page="0">
 						<span class="onboarding-eyebrow">Vasti Map</span>
@@ -281,12 +285,12 @@
 						</div>
 					</article>
 
-<article id="changelogPage" class="onboarding-page" data-onboarding-page="2" aria-hidden="true"><span class="onboarding-eyebrow">Újdonságok</span><h2 class="changelog-heading">Mi változott?</h2><ul class="changelog-list"></ul></article>
+
 				</div>
 
 				<footer class="onboarding-footer">
 					<button id="onboardingBack" class="onboarding-secondary-button" type="button">← Vissza</button>
-					<div id="onboardingProgress" class="onboarding-progress" aria-label="Bemutató 1 / 3">
+					<div id="onboardingProgress" class="onboarding-progress" aria-label="Bemutató 1 / 2">
 						<span class="active"></span><span></span>
 					</div>
 					<button id="onboardingNext" class="onboarding-primary-button" type="button">Tovább →</button>
@@ -298,8 +302,9 @@
 		<script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 		<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 		<script src="config.js"></script>
-		<script src="script.js"></script>
+<div id="vmNewsOverlay" class="vm-overlay" hidden><section class="vm-dialog vm-news-dialog" role="dialog" aria-modal="true" aria-label="Mi változott?"><button id="vmNewsClose" class="vm-close" type="button" aria-label="Bezárás">×</button><span class="panel-eyebrow">Újdonságok</span><h2 id="vmNewsTitle">Mi változott?</h2><ul id="vmNewsItems" class="changelog-list"></ul></section></div>
 <div id="vmProfileOverlay" class="vm-overlay" hidden><section class="vm-dialog" role="dialog" aria-modal="true" aria-label="VastiMap profil"><button id="vmCloseProfile" class="vm-close" type="button" aria-label="Bezárás">×</button><div id="vmProfileBody"></div></section></div>
+<script src="script.js?v=refactor13"></script>
 <script src="theme16.js"></script>
 <script src="profile16.js"></script>
 </body>

@@ -95,6 +95,7 @@ vmLightTiles.addTo(map);
 // Dark presentation reuses existing OSM tiles; no external API key required.
 window.vmSetMapTheme = function(theme) {
   document.getElementById('map')?.classList.toggle('vm-map-dark', theme === 'dark');
+  document.body.classList.toggle('vm-dark-basemap', theme === 'dark');
 };
 
 const markerLayer = L.markerClusterGroup({
@@ -298,6 +299,7 @@ const mobileWidthQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`
 const landscapeWidthQuery = window.matchMedia(`(max-width: ${LANDSCAPE_BREAKPOINT}px)`);
 const landscapeOrientationQuery = window.matchMedia("(orientation: landscape)");
 const coarsePointerQuery = window.matchMedia("(pointer: coarse)");
+const compactLandscapeHeightQuery = window.matchMedia("(max-height: 500px)");
 
 function isMobile() {
 	return mobileWidthQuery.matches || isMobileLandscape();
@@ -305,6 +307,7 @@ function isMobile() {
 
 function isMobileLandscape() {
 	return landscapeWidthQuery.matches && landscapeOrientationQuery.matches &&
+		compactLandscapeHeightQuery.matches &&
 		(coarsePointerQuery.matches || mobileWidthQuery.matches);
 }
 
@@ -470,14 +473,17 @@ async function loadPublishedChangelog() {
  try { if(localStorage.getItem(CHANGELOG_SEEN_KEY)!==data.changelog_version && hasSeenOnboarding()) openChangelog(); }catch{}
 }
 function openChangelog() {
- if(!publishedChangelog){const page=document.getElementById("changelogPage");page.querySelector(".changelog-heading").textContent="Még nincs közzétett változáslista";page.querySelector(".changelog-list").replaceChildren();openOnboarding("changelog");renderOnboardingPage(onboardingPages.length-1);return;}
- const page=document.getElementById("changelogPage");
- page.querySelector(".changelog-heading").textContent=`${publishedChangelog.changelog_title || "Mi változott?"} · v${publishedChangelog.changelog_version}`;
- const list=page.querySelector(".changelog-list");list.replaceChildren();
- (publishedChangelog.changelog_items||[]).forEach(item=>{const li=document.createElement("li");li.textContent=item;list.append(li);});
- openOnboarding("changelog");renderOnboardingPage(onboardingPages.length-1);
- try{localStorage.setItem(CHANGELOG_SEEN_KEY,publishedChangelog.changelog_version);}catch{}
+ const o=document.getElementById('vmNewsOverlay');
+ const t=document.getElementById('vmNewsTitle');
+ const list=document.getElementById('vmNewsItems');
+ if(!o||!t||!list)return;
+ t.textContent=publishedChangelog?`${publishedChangelog.changelog_title||'Mi változott?'} · v${publishedChangelog.changelog_version}`:'Még nincs közzétett változáslista';
+ list.replaceChildren();
+ (publishedChangelog?.changelog_items||[]).forEach(item=>{const li=document.createElement('li');li.textContent=item;list.append(li)});
+ o.hidden=false; o.style.removeProperty('display');
+ try{if(publishedChangelog)localStorage.setItem(CHANGELOG_SEEN_KEY,publishedChangelog.changelog_version)}catch{}
 }
+
 function formatTicketPrices(info) {
  const names={adult:"Felnőtt",student:"Diák",senior:"Nyugdíjas"};
  const lines=(info.items||[]).map(item=>`${escapeHtml(item.type==="custom"?item.label:(names[item.type]||item.type))}: ${Number(item.price).toLocaleString("hu-HU")} Ft`);
@@ -748,7 +754,7 @@ function renderCategoryFilters() {
 						aria-label="${label}"
 						title="${label}"
 					>
-						<span aria-hidden="true">${config.symbol}</span>
+						<span aria-hidden="true">${config.symbol}</span><span class="vm-filter-label">${escapeHtml(label)}</span>
 					</button>
 					${isFood ? `
 						<div class="list-price-branch" aria-label="Kajálda árkategória">
@@ -783,7 +789,7 @@ function renderCategoryFilters() {
 						aria-label="${label}"
 						title="${label}"
 					>
-						<span aria-hidden="true">${config.symbol}</span>
+						<span aria-hidden="true">${config.symbol}</span><span class="vm-filter-label">${escapeHtml(label)}</span>
 					</button>
 					${priceDock}
 				</div>
@@ -829,6 +835,7 @@ function getVisiblePlaces() {
 }
 
 function syncFilterControls() {
+	if(document.body.classList.contains("list-open") && window.matchMedia("(min-width:769px)").matches) requestAnimationFrame(()=>renderPlaceList({resetScroll:true}));
 	document.querySelectorAll("[data-category-filter]").forEach((button) => {
 		button.classList.toggle("active", selectedCategories.has(button.dataset.categoryFilter));
 	});
@@ -1196,19 +1203,23 @@ function selectPlaceFromSearch(placeId) {
 
 // List
 function getListPlaces() {
-	const searchText = listSearchInput.value.trim().toLocaleLowerCase("hu");
+	const desktopBrowsing = document.body.classList.contains("list-open") && window.matchMedia("(min-width:769px)").matches;
+	const activeCategories=desktopBrowsing?selectedCategories:listSelectedCategories;
+	const activeFree=desktopBrowsing?freeOnly:listFreeOnly;
+	const activePrices=desktopBrowsing?selectedPriceLevels:listSelectedPriceLevels;
+	const searchText = (desktopBrowsing?desktopPlaceSearchInput.value:listSearchInput.value).trim().toLocaleLowerCase("hu");
 	const sortMode = listSortSelect.value;
 	const filteredPlaces = browseablePlaces.filter((place) => {
         if(window.vmShouldHideVisited?.(place.id))return false;
-		const categoryMatches = listSelectedCategories.size === 0 ||
-			place.categories.some((category) => listSelectedCategories.has(category));
+		const categoryMatches = activeCategories.size === 0 ||
+			place.categories.some((category) => activeCategories.has(category));
 
-		if (!categoryMatches || (listFreeOnly && !place.isFree)) {
+		if (!categoryMatches || (activeFree && !place.isFree)) {
 			return false;
 		}
 
-		if (isFoodPlace(place) && listSelectedPriceLevels.size > 0 &&
-			!listSelectedPriceLevels.has(place.priceLevel)) {
+		if (isFoodPlace(place) && activePrices.size > 0 &&
+			!activePrices.has(place.priceLevel)) {
 			return false;
 		}
 
@@ -1315,6 +1326,8 @@ function setListOpen(isOpen) {
 	listPanel.setAttribute("aria-hidden", String(!isOpen));
 	desktopListButton.classList.toggle("active", isOpen);
 	desktopListButton.setAttribute("aria-expanded", String(isOpen));
+	desktopListButton.querySelector(".vm-list-button-text").textContent=isOpen?"Térkép":"Lista";
+	desktopListButton.querySelector("span[aria-hidden]").textContent=isOpen?"▤":"☷";
 	mobileListButton.classList.toggle("active", isOpen);
 	mobileListButton.setAttribute("aria-expanded", String(isOpen));
 	document.body.classList.toggle("list-open", isOpen);
@@ -1326,6 +1339,7 @@ function setListOpen(isOpen) {
 		if (isMobile()) {
 			closePlaceDetails();
 		}
+		if(window.matchMedia("(min-width:769px)").matches){listSearchInput.value=desktopPlaceSearchInput.value;}
 		renderPlaceList({ resetScroll: true });
 	}
 
@@ -2060,13 +2074,17 @@ function openPlaceDetails(placeId, options = {}) {
 				<p>${escapeHtml(place.description)}</p>
 			</section>
 
-			<section class="info-block ticket-info-block">
+			<div class="vm-desktop-info-pair">
+				<section class="vm-desktop-info-card"><span class="vm-info-icon">◷</span><strong>Nyitvatartás</strong><div class="vm-info-expand">${place.openingSchedule ? formatOpeningSchedule(place.openingSchedule) : escapeHtml(place.openingHours)}</div></section>
+				<section class="vm-desktop-info-card"><span class="vm-info-icon">▤</span><strong>Belépőjegy</strong><div class="vm-info-expand">${ticketInfoHtml}${freeEntryHtml}</div></section>
+			</div>
+			<section class="info-block ticket-info-block vm-mobile-info-original">
 				<h3>Jegyinformáció</h3>
 				${ticketInfoHtml}
 				${freeEntryHtml}
 			</section>
 
-			<section class="info-block">
+			<section class="info-block vm-mobile-info-original">
 				<h3>Nyitvatartás</h3>
 				<p>${place.openingSchedule ? formatOpeningSchedule(place.openingSchedule) : escapeHtml(place.openingHours)}</p>
 			</section>
@@ -2332,7 +2350,7 @@ const renderDesktopSearchResults = debounce(() => renderPlaceSearchResults(deskt
 const renderListSearchResults = debounce(() => renderPlaceList({ resetScroll: true }));
 
 placeSearchInput.addEventListener("input", renderMobileSearchResults);
-desktopPlaceSearchInput.addEventListener("input", renderDesktopSearchResults);
+desktopPlaceSearchInput.addEventListener("input", ()=>{if(document.body.classList.contains("list-open") && window.matchMedia("(min-width:769px)").matches){listSearchInput.value=desktopPlaceSearchInput.value;renderPlaceList({resetScroll:true});desktopPlaceSearchResults.classList.add("hidden");return;}renderDesktopSearchResults();});
 
 [[placeSearchInput, placeSearchResults], [desktopPlaceSearchInput, desktopPlaceSearchResults]].forEach(([input, results]) => {
 	results.addEventListener("click", (event) => {
@@ -2359,13 +2377,14 @@ placesListView.addEventListener("click", (event) => {
 
 	const place = getPlaceById(Number(button.dataset.listPlaceId));
 	if (place) {
+		if (window.matchMedia('(min-width: 769px)').matches) setListOpen(false);
 		focusPlace(place, true);
 	}
 });
 
 helpButton.addEventListener("click", () => openOnboarding("help"));
-document.getElementById("showChangelogButton").addEventListener("click",openChangelog);
-document.getElementById("showHelpButton").addEventListener("click",()=>{openOnboarding("help");});
+
+
 onboardingClose.addEventListener("click", () => closeOnboarding());
 onboardingBack.addEventListener("click", () => renderOnboardingPage(onboardingPageIndex - 1));
 onboardingNext.addEventListener("click", () => {
@@ -2574,3 +2593,26 @@ initializeApp();
 window.vmGetPlaceById=(id)=>getPlaceById(Number(id));
 window.vmNavigateToPlace=(id)=>{const p=getPlaceById(Number(id));if(p)focusPlace(p,true)};
 window.vmRefreshVisitedFilter=()=>{applyFilters();renderPlaceList()};
+
+// Desktop notification bell opens the published changelog.
+document.getElementById("desktopNewsButton")?.addEventListener("click",openChangelog);
+function vmCloseNews(event) {
+ event?.preventDefault(); event?.stopPropagation();
+ const overlay=document.getElementById('vmNewsOverlay');
+ if (overlay) { overlay.hidden=true; overlay.style.display='none'; }
+}
+document.getElementById('vmNewsClose')?.addEventListener('click',vmCloseNews,true);
+// Keep this button outside the scrolling details panel, so it never moves with the image.
+const vmDesktopDetailClose=document.getElementById('vmDesktopDetailClose');
+vmDesktopDetailClose?.addEventListener('click',()=>document.getElementById('closeDetailsButton')?.click());
+const vmDetailsPanel=document.getElementById('detailsPanel');
+if(vmDetailsPanel && vmDesktopDetailClose){
+ const sync=()=>{const open=vmDetailsPanel.classList.contains('open');vmDesktopDetailClose.classList.toggle('vm-visible',open);document.getElementById('vmDetailsDock')?.classList.toggle('open',open)};
+ new MutationObserver(sync).observe(vmDetailsPanel,{attributes:true,attributeFilter:['class']});sync();
+}
+document.getElementById('vmNewsOverlay')?.addEventListener('click',e=>{if(e.target===e.currentTarget)vmCloseNews(e)});
+
+// Event panel uses the same integrated edge-close treatment as place details.
+document.getElementById('vmDesktopEventsEdgeClose')?.addEventListener('click',()=>document.getElementById('desktopEventsClose')?.click());
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElementById('vmNewsOverlay')?.hidden)vmCloseNews(e)});

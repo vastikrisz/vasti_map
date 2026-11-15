@@ -3,6 +3,15 @@
 const db=supabaseClient;
 const usersTab=document.getElementById('vmUsersTabButton'),feedbackTab=document.getElementById('vmFeedbackTabButton');
 const usersView=document.getElementById('vmAdminUsers'),feedbackView=document.getElementById('vmAdminFeedback');
+async function refreshOverview(){
+ const panel=document.getElementById('vmAdminOverview');if(!panel||document.getElementById('dashboardSection').classList.contains('hidden'))return;
+ const queries=[db.from('places').select('*',{count:'exact',head:true}).eq('is_published',true),db.from('user_profiles').select('*',{count:'exact',head:true}).eq('approved',false),db.from('user_feedback').select('*',{count:'exact',head:true}).eq('status','new')];
+ const result=await Promise.allSettled(queries);
+ ['vmAdminPlaceCount','vmAdminPendingCount','vmAdminFeedbackCount'].forEach((id,i)=>{const r=result[i];document.getElementById(id).textContent=r.status==='fulfilled'&&!r.value.error?String(r.value.count??0):'–'});
+}
+const overviewObserver=new MutationObserver(()=>{if(!document.getElementById('dashboardSection').classList.contains('hidden'))refreshOverview()});
+overviewObserver.observe(document.getElementById('dashboardSection'),{attributes:true,attributeFilter:['class']});
+document.querySelectorAll('.admin-tab').forEach(tab=>tab.addEventListener('click',()=>refreshOverview()));
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 window.vmAdminSwitch=view=>{usersView.classList.toggle('hidden',view!=='vmusers');feedbackView.classList.toggle('hidden',view!=='vmfeedback');usersTab.classList.toggle('active',view==='vmusers');feedbackTab.classList.toggle('active',view==='vmfeedback');if(view==='vmusers')loadUsers();if(view==='vmfeedback')loadFeedback()};
 usersTab.onclick=()=>switchAdminView('vmusers');feedbackTab.onclick=()=>switchAdminView('vmfeedback');

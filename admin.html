@@ -6,7 +6,7 @@
 		<title>Térkép adminisztráció</title>
 		<link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
-		<link rel="stylesheet" href="admin.css">
+		<link rel="stylesheet" href="admin.css?v=desktop16">
 	</head>
 	<body>
 		<main class="admin-page">
@@ -34,6 +34,7 @@
 					<button id="logoutButton" class="secondary-button" type="button">Kijelentkezés</button>
 				</div>
 				<p id="userEmail" class="user-email"></p>
+                <div id="vmAdminOverview" class="vm-admin-overview" aria-label="Admin összesítés"><div><span>Publikált helyek</span><strong id="vmAdminPlaceCount">–</strong></div><div><span>Jóváhagyásra vár</span><strong id="vmAdminPendingCount">–</strong></div><div><span>Új visszajelzések</span><strong id="vmAdminFeedbackCount">–</strong></div></div>
 				<div class="admin-tabs">
 					<button id="placesTabButton" class="admin-tab active" type="button">Helyek</button>
 					<button id="vmUsersTabButton" class="admin-tab" type="button">Felhasználók</button>
