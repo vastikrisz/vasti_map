@@ -21,7 +21,7 @@
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
-		<link rel="stylesheet" href="style.css?v=refactor13">
+		<link rel="stylesheet" href="style.css?v=refactor19">
 	</head>
 	<body>
 		<main class="app">
@@ -86,9 +86,12 @@
 						<button id="desktopListButton" class="desktop-list-tab" type="button" aria-controls="listPanel" aria-expanded="false"><span aria-hidden="true">☷</span><span class="vm-list-button-text">Lista</span></button>
 						<div class="desktop-filter-wrap">
 							<div id="desktopCategoryFilters" class="desktop-category-filters"></div>
-							<button class="desktop-filter-button desktop-free-filter" type="button" data-free-filter="true" aria-label="Ingyenes" title="Ingyenes">
-								<span aria-hidden="true">✓</span>
+                            <div class="vm-free-filter-item">
+							<button class="desktop-filter-button desktop-free-filter" type="button" data-free-filter="true" aria-label="Ingyenes">
+								<span aria-hidden="true">0 Ft</span>
 							</button>
+                            <span class="vm-free-tooltip" aria-hidden="true">Ingyenes</span>
+                            </div>
 							<div class="desktop-result-tab">
 								<span id="desktopResultsCount">0 hely</span>
 							</div>
@@ -148,7 +151,7 @@
 							<strong>Belépés</strong>
 							<div class="category-filters compact">
 								<button class="category-button free-filter-button" type="button" data-free-filter="true">
-									<span aria-hidden="true">✓</span>
+									<span aria-hidden="true">0 Ft</span>
 									Ingyenes
 								</button>
 							</div>
@@ -304,7 +307,7 @@
 		<script src="config.js"></script>
 <div id="vmNewsOverlay" class="vm-overlay" hidden><section class="vm-dialog vm-news-dialog" role="dialog" aria-modal="true" aria-label="Mi változott?"><button id="vmNewsClose" class="vm-close" type="button" aria-label="Bezárás">×</button><span class="panel-eyebrow">Újdonságok</span><h2 id="vmNewsTitle">Mi változott?</h2><ul id="vmNewsItems" class="changelog-list"></ul></section></div>
 <div id="vmProfileOverlay" class="vm-overlay" hidden><section class="vm-dialog" role="dialog" aria-modal="true" aria-label="VastiMap profil"><button id="vmCloseProfile" class="vm-close" type="button" aria-label="Bezárás">×</button><div id="vmProfileBody"></div></section></div>
-<script src="script.js?v=refactor13"></script>
+<script src="script.js?v=refactor19"></script>
 <script src="theme16.js"></script>
 <script src="profile16.js"></script>
 </body>

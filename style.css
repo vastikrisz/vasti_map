@@ -4568,3 +4568,121 @@ body:not(.vm-dark-basemap) .help-button {background:rgba(10,17,27,.9)!important;
     line-height:1.2!important;
   }
 }
+
+/* Refaktor 16: ikon-alapú desktop szűrés; felirat lebegő címkeként. */
+@media (min-width:769px) {
+ .app > .topbar .desktop-category-filters .desktop-filter-button {
+   display:flex!important;align-items:center!important;justify-content:center!important;
+   flex:0 0 29px!important;width:29px!important;min-width:29px!important;max-width:29px!important;
+   height:34px!important;padding:0!important;overflow:visible!important;font-size:0!important;
+ }
+ .app > .topbar .desktop-category-filters .desktop-filter-button > [aria-hidden="true"] {font-size:17px!important;line-height:1!important;}
+ .app > .topbar .desktop-category-filters .vm-filter-label {display:none!important;}
+ .app > .topbar .desktop-filter-item {position:relative!important;}
+ .app > .topbar .vm-category-tooltip {
+   display:block;position:absolute;z-index:9000;top:calc(100% + 9px);left:50%;
+   transform:translate(-50%,-4px);padding:7px 10px;border-radius:8px;
+   background:#172638;color:#f6f8fc;border:1px solid #40546b;
+   box-shadow:0 6px 18px #0005;font-size:12px;font-weight:600;
+   white-space:nowrap;pointer-events:none;opacity:0;visibility:hidden;
+   transition:opacity .14s,transform .14s,visibility .14s;
+ }
+ .app > .topbar .desktop-filter-item:hover > .vm-category-tooltip,
+ .app > .topbar .desktop-filter-item:focus-within > .vm-category-tooltip {opacity:1;visibility:visible;transform:translate(-50%,0);}
+ .app > .topbar .desktop-category-filters {min-width:0!important;}
+ .vm-more-categories {display:none;position:relative;flex:0 0 auto;}
+ .vm-more-categories > summary {list-style:none;cursor:pointer;width:31px;height:34px;display:grid;place-items:center;color:inherit;border-radius:9px;background:rgba(120,150,180,.15);font-weight:800;}
+ .vm-more-categories > summary::-webkit-details-marker {display:none;}
+ .vm-more-category-menu {position:absolute;z-index:9100;top:calc(100% + 10px);right:0;width:min(275px,80vw);max-height:65vh;overflow:auto;background:#1b2b3c;border:1px solid #486076;border-radius:12px;padding:7px;box-shadow:0 12px 30px #0007;}
+ .vm-more-category-button {display:flex;align-items:center;gap:10px;width:100%;min-height:39px;padding:7px 10px;text-align:left;border:0;border-radius:7px;background:transparent;color:#eef4fb;font-size:12px;cursor:pointer;}
+ .vm-more-category-button:hover,.vm-more-category-button.active {background:#305477;}
+ .vm-more-category-button [aria-hidden] {font-size:18px;}
+}
+@media (min-width:769px) and (max-width:1350px) {
+ .app > .topbar .desktop-category-filters .desktop-filter-item:nth-child(n+8) {display:none!important;}
+ .app > .topbar .vm-more-categories {display:block!important;}
+ .app > .topbar .desktop-category-filters .desktop-filter-button {flex-basis:25px!important;width:25px!important;min-width:25px!important;max-width:25px!important;}
+ .app > .topbar .desktop-search-dock {min-width:75px!important;}
+}
+@media (min-width:769px) and (max-width:1020px) {
+ .app > .topbar .desktop-category-filters .desktop-filter-item:nth-child(n+5) {display:none!important;}
+ .app > .topbar .desktop-filter-wrap {min-width:0!important;}
+ .app > .topbar .desktop-result-tab {display:none!important;}
+}
+@media (max-width:768px) {
+ /* Átmeneti mobilbiztonság: a két szűrő külön-külön görgethető, nem lóghat ki. */
+ .filter-panel #categoryFilters {max-height:min(62dvh,520px)!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;justify-content:flex-start!important;scrollbar-width:thin;overscroll-behavior:contain;}
+ .filter-panel .category-icon-button {flex:0 0 auto!important;width:34px!important;height:34px!important;min-height:34px!important;}
+ .list-filter-row,.list-categories {max-width:100%!important;min-width:0!important;box-sizing:border-box!important;}
+ .list-filter-row {overflow-x:auto!important;overflow-y:hidden!important;overscroll-behavior-x:contain;scrollbar-width:thin;}
+ .list-categories {width:max-content!important;max-width:none!important;flex-wrap:nowrap!important;}
+ .list-filter-item {flex:0 0 auto!important;}
+ .list-filter-item .category-icon-button {width:36px!important;min-width:36px!important;height:36px!important;min-height:36px!important;overflow:hidden!important;}
+ .list-filter-item .vm-filter-label {display:none!important;}
+}
+
+/* Refaktor 17 – single custom desktop tooltip, free tooltip and more breathing room. */
+@media (min-width:769px) {
+ .app > .topbar .desktop-category-filters {gap:6px!important;}
+ .app > .topbar .desktop-filter-wrap {position:relative!important;gap:7px!important;}
+ .app > .topbar .vm-free-filter-item {position:relative;display:flex;align-items:center;flex:0 0 auto;}
+ .app > .topbar .vm-free-tooltip {
+   display:block;position:absolute;z-index:9000;top:calc(100% + 9px);
+   left:50%;transform:translate(-50%,-4px);padding:7px 10px;border-radius:8px;
+   background:#172638;color:#f6f8fc;border:1px solid #40546b;
+   box-shadow:0 6px 18px #0005;font-size:12px;font-weight:600;
+   white-space:nowrap;pointer-events:none;opacity:0;visibility:hidden;
+   transition:opacity .14s,transform .14s,visibility .14s;
+ }
+ .app > .topbar .desktop-free-filter:hover + .vm-free-tooltip,
+ .app > .topbar .desktop-free-filter:focus-visible + .vm-free-tooltip {
+   opacity:1;visibility:visible;transform:translate(-50%,0);
+ }
+}
+@media (min-width:769px) and (max-width:1350px) {
+ .app > .topbar .desktop-category-filters {gap:4px!important;}
+}
+@media (min-width:769px) and (max-width:1020px) {
+ .app > .topbar .desktop-category-filters {gap:3px!important;}
+}
+
+/* Refaktor 18: kattintás után a hover-címke rejtve marad, amíg az egér el nem hagyja a gombot. */
+@media (min-width:769px) {
+ .app > .topbar .desktop-filter-item.vm-tooltip-dismissed > .vm-category-tooltip,
+ .app > .topbar .vm-free-filter-item.vm-tooltip-dismissed > .vm-free-tooltip {
+   opacity:0!important;visibility:hidden!important;pointer-events:none!important;
+ }
+}
+
+/* Refaktor 19 – desktop food price controls, hover scope, tablet free badge, menu alignment. */
+@media (min-width:769px) {
+  .app > .topbar .desktop-filter-item.food:hover > .vm-category-tooltip,
+  .app > .topbar .desktop-filter-item.food:focus-within > .vm-category-tooltip {
+    opacity:0!important;visibility:hidden!important;pointer-events:none!important;
+  }
+  .app > .topbar .desktop-filter-item.food:has(> .desktop-filter-button:hover) > .vm-category-tooltip,
+  .app > .topbar .desktop-filter-item.food:has(> .desktop-filter-button:focus-visible) > .vm-category-tooltip {
+    opacity:1!important;visibility:visible!important;transform:translate(-50%,0)!important;
+  }
+  .app > .topbar .desktop-filter-item.food.vm-tooltip-dismissed > .vm-category-tooltip {
+    opacity:0!important;visibility:hidden!important;
+  }
+  .app > .topbar .desktop-price-dock {z-index:9200;gap:6px;padding:6px;}
+  .app > .topbar .desktop-price-dock button {min-width:53px;height:32px;padding:0 9px;font-size:11px;font-weight:700;white-space:nowrap;}
+  .app > .topbar .desktop-free-filter {display:flex!important;align-items:center!important;justify-content:center!important;min-width:42px!important;width:42px!important;flex:0 0 42px!important;height:34px!important;padding:0 3px!important;font-size:11px!important;}
+  .app > .topbar .desktop-free-filter span {display:block!important;font-size:11px!important;line-height:1!important;white-space:nowrap!important;}
+  .app > .topbar .desktop-free-filter::before {content:none!important;}
+  .app > .topbar .vm-more-category-menu {padding:8px!important;}
+  .app > .topbar .vm-more-category-button {display:grid!important;grid-template-columns:26px minmax(0,1fr)!important;gap:12px!important;align-items:center!important;min-height:43px!important;padding:8px 12px!important;}
+  .app > .topbar .vm-more-category-icon {display:flex!important;align-items:center!important;justify-content:center!important;width:26px!important;font-size:18px!important;line-height:1!important;}
+  .app > .topbar .vm-more-category-name {display:block!important;min-width:0!important;font-size:12px!important;line-height:1.25!important;}
+}
+@media (min-width:1601px) {
+  .app > .topbar .desktop-search-dock {max-width:440px!important;flex:1 1 300px!important;}
+  .app > .topbar .desktop-filter-wrap {margin-left:clamp(10px,2vw,44px)!important;padding:5px 12px!important;}
+  .app > .topbar .desktop-category-filters {gap:9px!important;}
+  .app > .topbar .desktop-toolbar {gap:clamp(10px,0.8vw,17px)!important;}
+}
+@media (min-width:769px) and (max-width:1350px) {
+  .app > .topbar .desktop-free-filter {width:42px!important;min-width:42px!important;flex-basis:42px!important;}
+}

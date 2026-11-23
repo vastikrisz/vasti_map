@@ -13,14 +13,30 @@ const MARKER_KEEP_ALL_THRESHOLD = 300;
 const IS_COARSE_POINTER = window.matchMedia("(pointer: coarse)").matches;
 
 const CATEGORY_MARKER_CONFIG = {
-	"Állatkert": { symbol: "🐾", color: "#2f9e62" },
-	"Múzeum": { symbol: "🏛", color: "#8b5cf6" },
-	"Vár / kastély": { symbol: "🏰", color: "#b7793f" },
-	"Séta / pihenőhely": { symbol: "🌳", color: "#0ea5a4" },
-	"Túra / kirándulóhely": { symbol: "▲", color: "#64748b" },
-	"Kajálda": { symbol: "🍴", color: "#f97316" },
-	"Helyi érdekesség": { symbol: "★", color: "#ec4899" }
+    "Állatkert": { symbol: "🐾", color: "#2f9e62" },
+    "Kajálda": { symbol: "🍴", color: "#f97316" },
+    "Múzeum": { symbol: "🏛️", color: "#8b5cf6" },
+    "Séta / pihenőhely": { symbol: "🌳", color: "#0ea5a4" },
+    "Túra / kirándulás": { symbol: "📍", color: "#64748b" },
+    "Vár": { symbol: "♜", color: "#b7793f" },
+    "Kastély / palota": { symbol: "🏰", color: "#c99c57" },
+    "Kulturális": { symbol: "⛪", color: "#b68bd5" },
+    "Barlang": { symbol: "🪨", color: "#7b8a9b" },
+    "Különleges programok": { symbol: "🎟️", color: "#db7093" },
+    "Helyi érdekesség": { symbol: "★", color: "#ec4899" }
 };
+// Legacy Supabase categories are normalized on read so old places remain visible
+// and searchable even before the optional permanent SQL migration is executed.
+const LEGACY_CATEGORY_MAP = Object.freeze({
+    "Vár / kastély": "Vár",
+    "Túra / kirándulóhely": "Túra / kirándulás"
+});
+function normalizePlaceCategories(values) {
+    return [...new Set((Array.isArray(values) ? values : [])
+        .map(value => LEGACY_CATEGORY_MAP[value] || value)
+        .filter(Boolean))];
+}
+const MAIN_CATEGORIES = ["Állatkert", "Kajálda", "Múzeum", "Séta / pihenőhely", "Túra / kirándulás", "Vár", "Kastély / palota", "Kulturális", "Barlang", "Különleges programok", "Helyi érdekesség"];
 const DEFAULT_MARKER_CONFIG = { symbol: "●", color: "#64748b" };
 const MONTH_NAMES = [
 	"Január", "Február", "Március", "Április", "Május", "Június",
@@ -633,7 +649,7 @@ async function loadPlaces() {
 	}
 
 	places = (data || []).map((place) => {
-		const categories = Array.isArray(place.categories) ? place.categories : [];
+		const categories = normalizePlaceCategories(place.categories);
 		const imageUrls = Array.isArray(place.image_urls) ? place.image_urls : [];
 
 		return {
@@ -666,8 +682,8 @@ async function loadPlaces() {
 	browseablePlaces = places.filter((place) => !place.isEventOnly);
 	markerLayer.options.removeOutsideVisibleBounds = browseablePlaces.length > MARKER_KEEP_ALL_THRESHOLD;
 
-	allCategories = [...new Set(getBrowseablePlaces().flatMap((place) => place.categories))]
-		.sort((a, b) => a.localeCompare(b, "hu"));
+	const databaseCategories = new Set(getBrowseablePlaces().flatMap((place) => place.categories));
+    allCategories = [...MAIN_CATEGORIES, ...[...databaseCategories].filter((category) => !MAIN_CATEGORIES.includes(category) && !Object.hasOwn(LEGACY_CATEGORY_MAP, category)).sort((a, b) => a.localeCompare(b, "hu"))];
 
 	renderCategoryFilters();
 	buildPlaceMarkers();
@@ -758,8 +774,8 @@ function renderCategoryFilters() {
 					</button>
 					${isFood ? `
 						<div class="list-price-branch" aria-label="Kajálda árkategória">
-							<button type="button" data-list-price-level="cheap" aria-label="Olcsó" title="Olcsó">€</button>
-							<button type="button" data-list-price-level="expensive" aria-label="Drága" title="Drága">€€</button>
+							<button type="button" data-list-price-level="cheap" aria-label="Olcsó" title="Olcsó">Olcsó</button>
+							<button type="button" data-list-price-level="expensive" aria-label="Drága" title="Drága">Drága</button>
 						</div>
 					` : ""}
 				</div>
@@ -774,8 +790,8 @@ function renderCategoryFilters() {
 			const priceDock = category === "Kajálda"
 				? `
 					<div id="desktopPriceDock" class="desktop-price-dock hidden">
-						<button type="button" data-price-level="cheap" aria-label="Olcsó" title="Olcsó">€</button>
-						<button type="button" data-price-level="expensive" aria-label="Drága" title="Drága">€€</button>
+						<button type="button" data-price-level="cheap" aria-label="Olcsó" title="Olcsó">Olcsó</button>
+						<button type="button" data-price-level="expensive" aria-label="Drága" title="Drága">Drága</button>
 					</div>
 				`
 				: "";
@@ -787,10 +803,10 @@ function renderCategoryFilters() {
 						type="button"
 						data-category-filter="${label}"
 						aria-label="${label}"
-						title="${label}"
 					>
 						<span aria-hidden="true">${config.symbol}</span><span class="vm-filter-label">${escapeHtml(label)}</span>
 					</button>
+                    <span class="vm-category-tooltip" aria-hidden="true">${label}</span>
 					${priceDock}
 				</div>
 			`;
@@ -803,9 +819,37 @@ function renderCategoryFilters() {
 			<button class="category-button list-free-filter" type="button" data-list-free-filter="true" aria-label="Ingyenes" title="Ingyenes">0 Ft</button>
 		</div>`;
 	desktopCategoryFilters.innerHTML = desktopHtml;
+    updateDesktopCategoryOverflow();
 	syncFilterControls();
 	syncListFilterControls();
 }
+
+function updateDesktopCategoryOverflow() {
+    const old = document.getElementById("vmMoreCategories");
+    if (old) old.remove();
+    const items = [...desktopCategoryFilters.querySelectorAll(".desktop-filter-item")];
+    if (!items.length) return;
+    const more = document.createElement("details");
+    more.id = "vmMoreCategories";
+    more.className = "vm-more-categories";
+    more.innerHTML = '<summary aria-label="További kategóriák">•••</summary><div class="vm-more-category-menu"></div>';
+    const menu = more.querySelector(".vm-more-category-menu");
+    items.forEach((item, index) => {
+        const original = item.querySelector("[data-category-filter]");
+        if (!original) return;
+        const clone = original.cloneNode(true);
+        clone.className = "vm-more-category-button";
+        clone.innerHTML = `<span class="vm-more-category-icon" aria-hidden="true">${original.querySelector('[aria-hidden="true"]')?.textContent || ""}</span><span class="vm-more-category-name">${original.dataset.categoryFilter}</span>`;
+        clone.dataset.moreIndex = index;
+        menu.appendChild(clone);
+        item.dataset.categoryIndex = index;
+    });
+    desktopCategoryFilters.after(more);
+}
+document.addEventListener("click", (event) => {
+    const menu = document.getElementById("vmMoreCategories");
+    if (menu?.open && (!menu.contains(event.target) || event.target.closest("[data-category-filter]"))) menu.open = false;
+});
 
 function isFoodPlace(place) {
 	return place.categories.includes("Kajálda");
@@ -2301,8 +2345,21 @@ function finishDetailsDrag(event) {
 	detailsSheetProgress >= DRAG_EXPAND_SNAP ? expandPlaceDetails() : collapsePlaceDetails();
 }
 
+// A címke csak akkor jelenjen meg ismét, ha az egér elhagyta az ikont.
+document.addEventListener("pointerleave", (event) => {
+    if (event.target instanceof Element && event.target.matches(".desktop-filter-item, .vm-free-filter-item")) {
+        event.target.classList.remove("vm-tooltip-dismissed");
+    }
+}, true);
+
 // Events
 function handleFilterClick(event) {
+    // Desktop: a kattintás után ne maradjon nyitva a hover/fókusz címke.
+    const desktopFilter = event.target.closest(".desktop-filter-item, .vm-free-filter-item");
+    if (desktopFilter && window.matchMedia("(min-width: 769px)").matches) {
+        desktopFilter.classList.add("vm-tooltip-dismissed");
+        if (event.target instanceof HTMLElement) event.target.closest("button")?.blur();
+    }
 	const listCategoryButton = event.target.closest("[data-list-category-filter]");
 	if (listCategoryButton) {
 		toggleListCategory(listCategoryButton.dataset.listCategoryFilter);

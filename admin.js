@@ -364,8 +364,12 @@ function startEditingPlace(placeId) {
 	const categories = Array.isArray(place.categories)
 		? place.categories
 		: [];
-	categoryOneInput.value = categories[0] || "";
-	categoryTwoInput.value = categories[1] || "";
+	const normalizedCategories = [...new Set(categories.map(category => ({
+		"Vár / kastély": "Vár",
+		"Túra / kirándulóhely": "Túra / kirándulás"
+	})[category] || category))];
+	categoryOneInput.value = normalizedCategories[0] || "";
+	categoryTwoInput.value = normalizedCategories[1] || "";
 	const imageUrls = Array.isArray(place.image_urls)
 		? place.image_urls
 		: [];
